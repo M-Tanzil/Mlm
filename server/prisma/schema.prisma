@@ -1,9 +1,3 @@
-// Models are generated from the live database:
-//   1) Run prisma/sql/001..003 in the Supabase SQL Editor
-//   2) npx prisma db pull      (fills this file with all models)
-//   3) npx prisma generate
-// After that, evolve the schema here and use `npx prisma migrate dev`.
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,4 +6,753 @@ datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model announcements {
+  id         BigInt    @id @default(autoincrement())
+  type       String
+  title      String
+  body       String?
+  media_url  String?
+  event_date DateTime? @db.Date
+  published  Boolean   @default(true)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model audit_logs {
+  id            BigInt   @id @default(autoincrement())
+  actor_user_id BigInt?
+  action        String
+  entity        String
+  entity_id     String?
+  before        Json?
+  after         Json?
+  ip            String?  @db.Inet
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  users         users?   @relation(fields: [actor_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model bank_transfers {
+  id         BigInt    @id @default(autoincrement())
+  payout_id  BigInt
+  account_no String?
+  ifsc       String?
+  amount     Decimal   @db.Decimal(14, 2)
+  utr_no     String?
+  status     String    @default("PENDING")
+  paid_at    DateTime? @db.Timestamptz(6)
+  payouts    payouts   @relation(fields: [payout_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model binary_volume {
+  member_id    BigInt   @id
+  left_volume  Decimal  @default(0) @db.Decimal(14, 2)
+  right_volume Decimal  @default(0) @db.Decimal(14, 2)
+  left_carry   Decimal  @default(0) @db.Decimal(14, 2)
+  right_carry  Decimal  @default(0) @db.Decimal(14, 2)
+  left_count   Int      @default(0)
+  right_count  Int      @default(0)
+  updated_at   DateTime @default(now()) @db.Timestamptz(6)
+  members      members  @relation(fields: [member_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model bonus_plans {
+  id                BigInt              @id @default(autoincrement())
+  code              String              @unique
+  name              String
+  frequency         String
+  config            Json                @default("{}")
+  active            Boolean             @default(true)
+  commission_ledger commission_ledger[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model commission_ledger {
+  id                                                BigInt         @id @default(autoincrement())
+  member_id                                         BigInt
+  bonus_code                                        String
+  amount                                            Decimal        @db.Decimal(14, 2)
+  cycle_id                                          BigInt?
+  source_type                                       String?
+  source_ref                                        String
+  from_member_id                                    BigInt?
+  level                                             Int?
+  note                                              String?
+  created_at                                        DateTime       @default(now()) @db.Timestamptz(6)
+  bonus_plans                                       bonus_plans    @relation(fields: [bonus_code], references: [code], onDelete: NoAction, onUpdate: NoAction)
+  payout_cycles                                     payout_cycles? @relation(fields: [cycle_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  members_commission_ledger_from_member_idTomembers members?       @relation("commission_ledger_from_member_idTomembers", fields: [from_member_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  members_commission_ledger_member_idTomembers      members        @relation("commission_ledger_member_idTomembers", fields: [member_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([member_id, bonus_code, source_ref])
+  @@index([member_id, cycle_id], map: "idx_comm_member_cycle")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model company_info {
+  id       BigInt  @id @default(autoincrement())
+  name     String
+  address  String?
+  gstin    String?
+  pan      String?
+  email    String?
+  phone    String?
+  logo_url String?
+  settings Json?   @default("{}")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model couriers {
+  id                         BigInt                       @id @default(autoincrement())
+  name                       String
+  contact                    String?
+  tracking_url_template      String?
+  active                     Boolean?                     @default(true)
+  dispatches                 dispatches[]
+  joining_package_deliveries joining_package_deliveries[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model dispatches {
+  id            BigInt    @id @default(autoincrement())
+  order_id      BigInt    @unique
+  courier_id    BigInt?
+  tracking_no   String?
+  dispatched_at DateTime? @db.Timestamptz(6)
+  delivered_at  DateTime? @db.Timestamptz(6)
+  status        String    @default("PENDING")
+  couriers      couriers? @relation(fields: [courier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orders        orders    @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model documents {
+  id          BigInt  @id @default(autoincrement())
+  title       String
+  file_url    String
+  audience    String? @default("ALL")
+  uploaded_by BigInt?
+  users       users?  @relation(fields: [uploaded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model epin_requests {
+  id           BigInt   @id @default(autoincrement())
+  member_id    BigInt
+  package_id   BigInt
+  qty          Int
+  status       String   @default("PENDING")
+  processed_by BigInt?
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  members      members  @relation(fields: [member_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  packages     packages @relation(fields: [package_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users        users?   @relation(fields: [processed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  epins        epins[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model epins {
+  id                               BigInt         @id @default(autoincrement())
+  code                             String         @unique
+  package_id                       BigInt
+  status                           String         @default("GENERATED")
+  request_id                       BigInt?
+  issued_to                        BigInt?
+  issued_at                        DateTime?      @db.Timestamptz(6)
+  used_by                          BigInt?
+  used_at                          DateTime?      @db.Timestamptz(6)
+  created_by                       BigInt?
+  created_at                       DateTime       @default(now()) @db.Timestamptz(6)
+  users                            users?         @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  members_epins_issued_toTomembers members?       @relation("epins_issued_toTomembers", fields: [issued_to], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  packages                         packages       @relation(fields: [package_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  epin_requests                    epin_requests? @relation(fields: [request_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  members_epins_used_byTomembers   members?       @relation("epins_used_byTomembers", fields: [used_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orders                           orders[]
+
+  @@index([status, issued_to], map: "idx_epins_status")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model faqs {
+  id         BigInt @id @default(autoincrement())
+  question   String
+  answer     String
+  sort_order Int?   @default(0)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model joining_package_deliveries {
+  id              BigInt            @id @default(autoincrement())
+  member_id       BigInt
+  package_id      BigInt
+  location_id     BigInt?
+  courier_id      BigInt?
+  tracking_no     String?
+  status          String            @default("PENDING")
+  delivered_at    DateTime?         @db.Timestamptz(6)
+  couriers        couriers?         @relation(fields: [courier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  locations       locations?        @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  members         members           @relation(fields: [member_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  packages        packages          @relation(fields: [package_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  package_returns package_returns[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model kyc_documents {
+  id          BigInt    @id @default(autoincrement())
+  member_id   BigInt
+  doc_type    String
+  file_url    String
+  status      String    @default("PENDING")
+  remarks     String?
+  reviewed_by BigInt?
+  reviewed_at DateTime? @db.Timestamptz(6)
+  members     members   @relation(fields: [member_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users       users?    @relation(fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model locations {
+  id                                                       BigInt                       @id @default(autoincrement())
+  type                                                     String
+  name                                                     String
+  state                                                    String?
+  city                                                     String?
+  pincode                                                  String?
+  address                                                  String?
+  owner_user_id                                            BigInt?
+  active                                                   Boolean                      @default(true)
+  joining_package_deliveries                               joining_package_deliveries[]
+  users                                                    users?                       @relation(fields: [owner_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orders                                                   orders[]
+  pcr                                                      pcr[]
+  stock_inward                                             stock_inward[]
+  stock_ledger                                             stock_ledger[]
+  stock_returns                                            stock_returns[]
+  stock_transfers_stock_transfers_from_locationTolocations stock_transfers[]            @relation("stock_transfers_from_locationTolocations")
+  stock_transfers_stock_transfers_to_locationTolocations   stock_transfers[]            @relation("stock_transfers_to_locationTolocations")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model member_bank {
+  member_id    BigInt  @id
+  account_name String?
+  account_no   String?
+  ifsc         String?
+  bank_name    String?
+  branch       String?
+  members      members @relation(fields: [member_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model member_ranks {
+  member_id   BigInt
+  rank_id     BigInt
+  achieved_at DateTime    @default(now()) @db.Timestamptz(6)
+  members     members     @relation(fields: [member_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rank_master rank_master @relation(fields: [rank_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([member_id, rank_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model members {
+  id                                                          BigInt                       @id @default(autoincrement())
+  member_code                                                 String                       @unique
+  user_id                                                     BigInt                       @unique
+  sponsor_id                                                  BigInt?
+  parent_id                                                   BigInt?
+  position                                                    String?                      @db.Char(1)
+  path                                                        Unsupported("ltree")
+  depth                                                       Int                          @default(0)
+  sponsor_path                                                Unsupported("ltree")?
+  package_id                                                  BigInt?
+  full_name                                                   String
+  dob                                                         DateTime?                    @db.Date
+  gender                                                      String?
+  address                                                     String?
+  state                                                       String?
+  city                                                        String?
+  pincode                                                     String?
+  pan_no                                                      String?
+  aadhaar_no                                                  String?
+  kyc_status                                                  String                       @default("PENDING")
+  status                                                      String                       @default("ACTIVE")
+  joined_at                                                   DateTime                     @default(now()) @db.Timestamptz(6)
+  binary_volume                                               binary_volume?
+  commission_ledger_commission_ledger_from_member_idTomembers commission_ledger[]          @relation("commission_ledger_from_member_idTomembers")
+  commission_ledger_commission_ledger_member_idTomembers      commission_ledger[]          @relation("commission_ledger_member_idTomembers")
+  epin_requests                                               epin_requests[]
+  epins_epins_issued_toTomembers                              epins[]                      @relation("epins_issued_toTomembers")
+  epins_epins_used_byTomembers                                epins[]                      @relation("epins_used_byTomembers")
+  joining_package_deliveries                                  joining_package_deliveries[]
+  kyc_documents                                               kyc_documents[]
+  member_bank                                                 member_bank?
+  member_ranks                                                member_ranks[]
+  packages                                                    packages?                    @relation(fields: [package_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  members_members_parent_idTomembers                          members?                     @relation("members_parent_idTomembers", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_members_members_parent_idTomembers                    members[]                    @relation("members_parent_idTomembers")
+  members_members_sponsor_idTomembers                         members?                     @relation("members_sponsor_idTomembers", fields: [sponsor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_members_members_sponsor_idTomembers                   members[]                    @relation("members_sponsor_idTomembers")
+  users                                                       users                        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orders                                                      orders[]
+  package_returns                                             package_returns[]
+  payouts                                                     payouts[]
+  scheme_qualifiers                                           scheme_qualifiers[]
+  tds_records                                                 tds_records[]
+  tickets                                                     tickets[]
+
+  @@unique([parent_id, position])
+  @@index([path], map: "idx_members_path", type: Gist)
+  @@index([sponsor_id], map: "idx_members_sponsor")
+  @@index([sponsor_path], map: "idx_members_sponsor_path", type: Gist)
+  @@index([state, city], map: "idx_members_state_city")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model messages {
+  id                                 BigInt    @id @default(autoincrement())
+  from_user_id                       BigInt
+  to_user_id                         BigInt
+  subject                            String?
+  body                               String?
+  read_at                            DateTime? @db.Timestamptz(6)
+  created_at                         DateTime  @default(now()) @db.Timestamptz(6)
+  users_messages_from_user_idTousers users     @relation("messages_from_user_idTousers", fields: [from_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_messages_to_user_idTousers   users     @relation("messages_to_user_idTousers", fields: [to_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model notifications {
+  id         BigInt    @id @default(autoincrement())
+  user_id    BigInt?
+  channel    String
+  template   String?
+  subject    String?
+  body       String?
+  recipient  String?
+  status     String    @default("QUEUED")
+  error      String?
+  sent_at    DateTime? @db.Timestamptz(6)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  users      users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model order_items {
+  id          BigInt   @id @default(autoincrement())
+  order_id    BigInt
+  product_id  BigInt
+  qty         Int
+  price       Decimal  @db.Decimal(14, 2)
+  bv          Decimal  @default(0) @db.Decimal(14, 2)
+  gst_percent Decimal? @default(0) @db.Decimal(5, 2)
+  orders      orders   @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products    products @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model orders {
+  id             BigInt        @id @default(autoincrement())
+  order_no       String        @unique
+  member_id      BigInt
+  location_id    BigInt
+  type           String
+  subtotal       Decimal       @db.Decimal(14, 2)
+  gst_amount     Decimal       @default(0) @db.Decimal(14, 2)
+  total          Decimal       @db.Decimal(14, 2)
+  total_bv       Decimal       @default(0) @db.Decimal(14, 2)
+  payment_mode   String?
+  payment_status String        @default("PENDING")
+  status         String        @default("PLACED")
+  epin_id        BigInt?
+  created_at     DateTime      @default(now()) @db.Timestamptz(6)
+  dispatches     dispatches?
+  order_items    order_items[]
+  epins          epins?        @relation(fields: [epin_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  locations      locations     @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  members        members       @relation(fields: [member_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([member_id, created_at(sort: Desc)], map: "idx_orders_member")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model package_items {
+  package_id BigInt
+  product_id BigInt
+  qty        Int      @default(1)
+  products   products @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pi_product")
+  packages   packages @relation(fields: [package_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([package_id, product_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model package_returns {
+  id                         BigInt                      @id @default(autoincrement())
+  member_id                  BigInt
+  delivery_id                BigInt?
+  reason                     String?
+  status                     String                      @default("REQUESTED")
+  confirmed_by               BigInt?
+  confirmed_at               DateTime?                   @db.Timestamptz(6)
+  users                      users?                      @relation(fields: [confirmed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  joining_package_deliveries joining_package_deliveries? @relation(fields: [delivery_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  members                    members                     @relation(fields: [member_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model packages {
+  id                         BigInt                       @id @default(autoincrement())
+  name                       String
+  price                      Decimal                      @db.Decimal(14, 2)
+  bv                         Decimal                      @default(0) @db.Decimal(14, 2)
+  active                     Boolean                      @default(true)
+  epin_requests              epin_requests[]
+  epins                      epins[]
+  joining_package_deliveries joining_package_deliveries[]
+  members                    members[]
+  package_items              package_items[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model payout_cycles {
+  id                BigInt              @id @default(autoincrement())
+  period_from       DateTime            @db.Date
+  period_to         DateTime            @db.Date
+  status            String              @default("OPEN")
+  approved_by       BigInt?
+  approved_at       DateTime?           @db.Timestamptz(6)
+  commission_ledger commission_ledger[]
+  users             users?              @relation(fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payouts           payouts[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model payouts {
+  id             BigInt           @id @default(autoincrement())
+  cycle_id       BigInt
+  member_id      BigInt
+  gross          Decimal          @db.Decimal(14, 2)
+  tds            Decimal          @default(0) @db.Decimal(14, 2)
+  admin_charge   Decimal          @default(0) @db.Decimal(14, 2)
+  net            Decimal          @db.Decimal(14, 2)
+  status         String           @default("CALCULATED")
+  bank_transfers bank_transfers[]
+  payout_cycles  payout_cycles    @relation(fields: [cycle_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  members        members          @relation(fields: [member_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tds_records    tds_records[]
+
+  @@unique([cycle_id, member_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model pcr {
+  id          BigInt    @id @default(autoincrement())
+  location_id BigInt
+  items       Json
+  status      String    @default("PENDING")
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  locations   locations @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model product_categories {
+  id       BigInt     @id @default(autoincrement())
+  name     String     @unique
+  active   Boolean?   @default(true)
+  products products[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model products {
+  id                   BigInt                 @id @default(autoincrement())
+  category_id          BigInt
+  sku                  String                 @unique
+  name                 String
+  mrp                  Decimal                @db.Decimal(14, 2)
+  dp_price             Decimal                @db.Decimal(14, 2)
+  bv                   Decimal                @default(0) @db.Decimal(14, 2)
+  gst_percent          Decimal                @default(0) @db.Decimal(5, 2)
+  hsn_code             String?
+  image_url            String?
+  active               Boolean                @default(true)
+  order_items          order_items[]
+  package_items        package_items[]
+  product_categories   product_categories     @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  purchase_order_items purchase_order_items[]
+  stock_inward_items   stock_inward_items[]
+  stock_ledger         stock_ledger[]
+  stock_returns        stock_returns[]
+  stock_transfer_items stock_transfer_items[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model purchase_order_items {
+  id              BigInt          @id @default(autoincrement())
+  po_id           BigInt
+  product_id      BigInt
+  qty             Int
+  rate            Decimal         @db.Decimal(14, 2)
+  received_qty    Int             @default(0)
+  purchase_orders purchase_orders @relation(fields: [po_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products        products        @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model purchase_orders {
+  id                   BigInt                 @id @default(autoincrement())
+  po_no                String                 @unique
+  supplier_id          BigInt
+  status               String                 @default("OPEN")
+  total                Decimal                @default(0) @db.Decimal(14, 2)
+  created_by           BigInt?
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  purchase_order_items purchase_order_items[]
+  users                users?                 @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  suppliers            suppliers              @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  stock_inward         stock_inward[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model rank_master {
+  id           BigInt         @id @default(autoincrement())
+  name         String
+  level        Int
+  criteria     Json           @default("{}")
+  member_ranks member_ranks[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model refresh_tokens {
+  id         BigInt    @id @default(autoincrement())
+  user_id    BigInt
+  token_hash String
+  expires_at DateTime  @db.Timestamptz(6)
+  revoked_at DateTime? @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model roles {
+  id          BigInt  @id @default(autoincrement())
+  code        String  @unique
+  name        String
+  permissions Json    @default("{}")
+  users       users[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model scheme_qualifiers {
+  id           BigInt    @id @default(autoincrement())
+  scheme_id    BigInt
+  member_id    BigInt
+  progress     Decimal   @default(0) @db.Decimal(14, 2)
+  qualified    Boolean   @default(false)
+  qualified_at DateTime? @db.Timestamptz(6)
+  members      members   @relation(fields: [member_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  schemes      schemes   @relation(fields: [scheme_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([scheme_id, member_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model schemes {
+  id                BigInt              @id @default(autoincrement())
+  name              String
+  description       String?
+  target_type       String
+  target_value      Decimal             @db.Decimal(14, 2)
+  reward            String
+  start_date        DateTime            @db.Date
+  end_date          DateTime            @db.Date
+  active            Boolean             @default(true)
+  scheme_qualifiers scheme_qualifiers[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model sequences {
+  name       String  @id
+  prefix     String?
+  next_value BigInt  @default(1)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model stock_inward {
+  id                 BigInt               @id @default(autoincrement())
+  inward_no          String               @unique
+  mode               String
+  po_id              BigInt?
+  supplier_id        BigInt?
+  location_id        BigInt
+  invoice_no         String?
+  received_by        BigInt?
+  received_at        DateTime             @default(now()) @db.Timestamptz(6)
+  locations          locations            @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  purchase_orders    purchase_orders?     @relation(fields: [po_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users              users?               @relation(fields: [received_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  suppliers          suppliers?           @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  stock_inward_items stock_inward_items[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model stock_inward_items {
+  id           BigInt       @id @default(autoincrement())
+  inward_id    BigInt
+  product_id   BigInt
+  qty          Int
+  batch_no     String?
+  expiry_date  DateTime?    @db.Date
+  stock_inward stock_inward @relation(fields: [inward_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products     products     @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model stock_ledger {
+  id          BigInt    @id @default(autoincrement())
+  location_id BigInt
+  product_id  BigInt
+  qty_change  Int
+  txn_type    String
+  ref_type    String?
+  ref_id      BigInt?
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  locations   locations @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  products    products  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([location_id, product_id], map: "idx_stock_ledger")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model stock_returns {
+  id          BigInt    @id @default(autoincrement())
+  return_no   String    @unique
+  supplier_id BigInt
+  location_id BigInt
+  product_id  BigInt
+  qty         Int
+  reason      String?
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  locations   locations @relation(fields: [location_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  products    products  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  suppliers   suppliers @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model stock_transfer_items {
+  id              BigInt          @id @default(autoincrement())
+  transfer_id     BigInt
+  product_id      BigInt
+  qty_sent        Int
+  qty_accepted    Int?
+  products        products        @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  stock_transfers stock_transfers @relation(fields: [transfer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model stock_transfers {
+  id                                                 BigInt                 @id @default(autoincrement())
+  transfer_no                                        String                 @unique
+  from_location                                      BigInt
+  to_location                                        BigInt
+  status                                             String                 @default("SENT")
+  sent_at                                            DateTime               @default(now()) @db.Timestamptz(6)
+  accepted_at                                        DateTime?              @db.Timestamptz(6)
+  accepted_by                                        BigInt?
+  stock_transfer_items                               stock_transfer_items[]
+  users                                              users?                 @relation(fields: [accepted_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  locations_stock_transfers_from_locationTolocations locations              @relation("stock_transfers_from_locationTolocations", fields: [from_location], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  locations_stock_transfers_to_locationTolocations   locations              @relation("stock_transfers_to_locationTolocations", fields: [to_location], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model suppliers {
+  id              BigInt            @id @default(autoincrement())
+  name            String
+  contact_person  String?
+  mobile          String?
+  email           String?
+  gstin           String?
+  address         String?
+  active          Boolean?          @default(true)
+  purchase_orders purchase_orders[]
+  stock_inward    stock_inward[]
+  stock_returns   stock_returns[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tds_records {
+  id        BigInt   @id @default(autoincrement())
+  payout_id BigInt
+  member_id BigInt
+  pan_no    String?
+  rate      Decimal? @db.Decimal(5, 2)
+  amount    Decimal? @db.Decimal(14, 2)
+  fin_year  String?
+  members   members  @relation(fields: [member_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payouts   payouts  @relation(fields: [payout_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ticket_messages {
+  id             BigInt   @id @default(autoincrement())
+  ticket_id      BigInt
+  sender_user_id BigInt
+  body           String
+  attachment_url String?
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  users          users    @relation(fields: [sender_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tickets        tickets  @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model tickets {
+  id              BigInt            @id @default(autoincrement())
+  member_id       BigInt
+  subject         String
+  status          String            @default("OPEN")
+  priority        String?           @default("NORMAL")
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  ticket_messages ticket_messages[]
+  members         members           @relation(fields: [member_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model users {
+  id                                    BigInt            @id @default(autoincrement())
+  role_id                               BigInt
+  login_id                              String            @unique
+  email                                 String?           @unique @db.Citext
+  mobile                                String?
+  password_hash                         String
+  status                                String            @default("ACTIVE")
+  last_login_at                         DateTime?         @db.Timestamptz(6)
+  last_login_ip                         String?           @db.Inet
+  created_at                            DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at                            DateTime          @default(now()) @db.Timestamptz(6)
+  audit_logs                            audit_logs[]
+  documents                             documents[]
+  epin_requests                         epin_requests[]
+  epins                                 epins[]
+  kyc_documents                         kyc_documents[]
+  locations                             locations[]
+  members                               members?
+  messages_messages_from_user_idTousers messages[]        @relation("messages_from_user_idTousers")
+  messages_messages_to_user_idTousers   messages[]        @relation("messages_to_user_idTousers")
+  notifications                         notifications[]
+  package_returns                       package_returns[]
+  payout_cycles                         payout_cycles[]
+  purchase_orders                       purchase_orders[]
+  refresh_tokens                        refresh_tokens[]
+  stock_inward                          stock_inward[]
+  stock_transfers                       stock_transfers[]
+  ticket_messages                       ticket_messages[]
+  roles                                 roles             @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
