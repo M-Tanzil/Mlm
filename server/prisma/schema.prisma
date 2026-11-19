@@ -1,0 +1,15 @@
+// Models are generated from the live database:
+//   1) Run prisma/sql/001..003 in the Supabase SQL Editor
+//   2) npx prisma db pull      (fills this file with all models)
+//   3) npx prisma generate
+// After that, evolve the schema here and use `npx prisma migrate dev`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
