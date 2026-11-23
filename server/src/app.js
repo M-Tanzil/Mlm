@@ -22,6 +22,7 @@ import notification from './modules/notification/notification.routes.js';
 import announcement from './modules/announcement/announcement.routes.js';
 import support from './modules/support/support.routes.js';
 import company, { uploadsDir } from './modules/company/company.routes.js';
+import dashboard from './modules/dashboard/dashboard.routes.js';
 
 export const app = express();
 
@@ -38,7 +39,6 @@ app.get('/api/health', async (_req, res) => {
     res.status(503).json({ status: 'degraded', db: 'down' });
   }
 });
-
 
 app.use('/uploads', express.static(uploadsDir));
 app.use('/api/company', company);
@@ -57,6 +57,7 @@ app.use('/api/schemes', scheme);
 app.use('/api/notifications', notification);
 app.use('/api/announcements', announcement);
 app.use('/api/support', support);
+app.use('/api/dashboard', dashboard);
 
 app.use((_req, res) => res.status(404).json({ error: 'Route not found' }));
 app.use(errorHandler);

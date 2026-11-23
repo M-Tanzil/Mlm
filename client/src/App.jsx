@@ -6,6 +6,8 @@ import PanelLayout from './layouts/PanelLayout.jsx';
 import ProtectedRoute from './routes/ProtectedRoute.jsx';
 import NetworkTree from './features/network/NetworkTree.jsx';
 import TopLoader from './components/TopLoader.jsx';
+import AdminDashboard from './features/admin/AdminDashboard.jsx';
+import DistributorHome from './features/distributor/DistributorHome.jsx';
 
 const adminLinks = [
   { to: '/admin', label: 'Dashboard' },
@@ -32,12 +34,12 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/admin" element={
         <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN']}><PanelLayout title="Admin Panel" links={adminLinks} /></ProtectedRoute>}>
-        <Route index element={<Dashboard name="Admin" />} />
+        <Route index element={<AdminDashboard />} />
         <Route path="network" element={<NetworkTree />} />
       </Route>
       <Route path="/distributor" element={
         <ProtectedRoute roles={['DISTRIBUTOR']}><PanelLayout title="Distributor" links={distLinks} /></ProtectedRoute>}>
-        <Route index element={<Dashboard name="Distributor" />} />
+        <Route index element={<DistributorHome />} />
         <Route path="network" element={<NetworkTree />} />
       </Route>
       <Route path="/depo" element={
