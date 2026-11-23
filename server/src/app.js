@@ -21,10 +21,11 @@ import scheme from './modules/scheme/scheme.routes.js';
 import notification from './modules/notification/notification.routes.js';
 import announcement from './modules/announcement/announcement.routes.js';
 import support from './modules/support/support.routes.js';
+import company, { uploadsDir } from './modules/company/company.routes.js';
 
 export const app = express();
 
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: config.clientUrl, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan(config.env === 'production' ? 'combined' : 'dev'));
@@ -38,6 +39,9 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
+
+app.use('/uploads', express.static(uploadsDir));
+app.use('/api/company', company);
 app.use('/api/auth', auth);
 app.use('/api/members', member);
 app.use('/api/network', network);
