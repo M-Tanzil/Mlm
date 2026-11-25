@@ -11,6 +11,11 @@ const router = Router();
 router.use(requireRole('DISTRIBUTOR'));
 
 const id = z.coerce.number().int().positive();
+const parseId = (req) => {
+  const n = Number(req.params.id);
+  if (!Number.isInteger(n) || n < 1) throw badRequest('Invalid id');
+  return n;
+};
 
 async function member(req) {
   if (req.member) return req.member;
@@ -48,7 +53,7 @@ router.post('/orders', wrap(async (req, res) => {
   const d = z.object({
     location_id: id,
     payment_mode: z.enum(['CASH', 'WALLET', 'EPIN', 'ONLINE']).default('CASH'),
-    items: z.array(z.object({ product_id: id, qty: z.coerce.number().int().positive() })).min(1, 'Your cart is empty'),
+    items: z.array(z.object({ product_id: id, qty: z.coerce.number().int().positive().max(100_000) })).min(1, 'Your cart is empty').max(200),
   }).parse(req.body);
   const [loc] = await prisma.$queryRawUnsafe(`SELECT type FROM locations WHERE id = $1::bigint AND active = true`, d.location_id);
   if (!loc || !['DEPO', 'FRANCHISE'].includes(loc.type)) throw badRequest('Choose a depo or franchise to collect from');
@@ -63,7 +68,7 @@ router.get('/orders', wrap(async (req, res) => {
 
 router.get('/orders/:id', wrap(async (req, res) => {
   const m = await member(req);
-  const o = await getOrder(Number(req.params.id));
+  const o = await getOrder(parseId(req));
   if (!o || o.member_code !== m.member_code) throw notFound('Order not found');
   res.json(o);
 }));
@@ -71,7 +76,7 @@ router.get('/orders/:id', wrap(async (req, res) => {
 // I can cancel an order that has not been paid yet
 router.put('/orders/:id/cancel', wrap(async (req, res) => {
   const m = await member(req);
-  const o = await getOrder(Number(req.params.id));
+  const o = await getOrder(parseId(req));
   if (!o || o.member_code !== m.member_code) throw notFound('Order not found');
   if (o.status !== 'PLACED') throw badRequest('Only an unpaid order can be cancelled here. Contact support.');
   res.json(await cancelOrder(o.id));

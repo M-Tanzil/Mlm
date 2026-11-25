@@ -120,8 +120,8 @@ router.get('/couriers', wrap(async (_req, res) => {
   res.json({ rows, total: rows.length });
 }));
 router.get('/orders', wrap(async (req, res) => res.json(await listOrders({
-  page: Math.max(1, parseInt(req.query.page) || 1), limit: Math.min(100, parseInt(req.query.limit) || 20),
-  q: String(req.query.q || '').trim(), status: String(req.query.status || ''), onlyLocation: req.loc.id,
+  page: Math.max(1, parseInt(req.query.page) || 1), limit: Math.min(100, Math.max(1, parseInt(req.query.limit) || 20)),
+  q: String(req.query.q || '').trim(), status: String(req.query.status || ''), paymentStatus: String(req.query.payment_status || ''), onlyLocation: req.loc.id,
 }))));
 router.get('/orders/:id', wrap(async (req, res) => {
   const o = await getOrder(parseId(req), req.loc.id);
@@ -130,7 +130,7 @@ router.get('/orders/:id', wrap(async (req, res) => {
 }));
 router.put('/orders/:id/pay', wrap(async (req, res) => res.json(await markPaid(parseId(req), req.loc.id))));
 router.put('/orders/:id/dispatch', wrap(async (req, res) => {
-  const d = z.object({ courier_id: id.optional(), tracking_no: z.string().trim().transform((v) => v || null).nullish() }).parse(req.body);
+  const d = z.object({ courier_id: id.optional(), tracking_no: z.string().trim().max(100).transform((v) => v || null).nullish() }).parse(req.body);
   res.json(await dispatchOrder(parseId(req), d, req.loc.id));
 }));
 router.put('/orders/:id/deliver', wrap(async (req, res) => res.json(await deliverOrder(parseId(req), req.loc.id))));

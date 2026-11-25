@@ -18,10 +18,12 @@ import DepoManagementPage from './features/depo/DepoManagementPage.jsx';
 import PcrRequestsPage from './features/depo/PcrRequestsPage.jsx';
 import DepoStockPage from './features/depo/DepoStockPage.jsx';
 import DepoPcrPage from './features/depo/DepoPcrPage.jsx';
+import OrdersPage from './features/orders/OrdersPage.jsx';
 
 const adminLinks = [
   { to: '/admin', label: 'Dashboard' },
   { to: '/admin/network', label: 'Network Tree' },
+  { to: '/admin/orders', label: 'Orders & Dispatch' },
   { to: '/admin/inventory/categories', label: 'Product Categories' },
   { to: '/admin/inventory/products', label: 'Products' },
   { to: '/admin/inventory/suppliers', label: 'Suppliers' },
@@ -41,6 +43,7 @@ const distLinks = [
 ];
 const depoLinks = [
   { to: '/depo', label: 'My Stock' },
+  { to: '/depo/orders', label: 'Orders & Dispatch' },
   { to: '/depo/incoming', label: 'Incoming Stock' },
   { to: '/depo/requests', label: 'Stock Requests' },
 ];
@@ -62,6 +65,7 @@ export default function App() {
         <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN']}><PanelLayout title="Admin Panel" links={adminLinks} /></ProtectedRoute>}>
         <Route index element={<AdminDashboard />} />
         <Route path="network" element={<NetworkTree />} />
+        <Route path="orders" element={<OrdersPage />} />
         <Route path="inventory/categories" element={<CategoriesPage />} />
         <Route path="inventory/products" element={<ProductsPage />} />
         <Route path="inventory/suppliers" element={<SuppliersPage />} />
@@ -83,6 +87,7 @@ export default function App() {
       <Route path="/depo" element={
         <ProtectedRoute roles={['DEPO', 'FRANCHISE']}><PanelLayout title="Depo / Franchise" links={depoLinks} /></ProtectedRoute>}>
         <Route index element={<DepoStockPage />} />
+        <Route path="orders" element={<OrdersPage base="/depo/orders" couriersEndpoint="/depo/couriers" canPlace={false} canCancel={false} title="Orders & Dispatch" />} />
         <Route path="incoming" element={<StockTransfersPage base="/depo/transfers" canCreate={false} title="Incoming Stock" />} />
         <Route path="requests" element={<DepoPcrPage />} />
       </Route>

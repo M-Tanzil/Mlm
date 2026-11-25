@@ -13,11 +13,16 @@ export async function getOrder(orderId, onlyLocation = null) {
             o.subtotal::float8 AS subtotal, o.gst_amount::float8 AS gst_amount, o.total::float8 AS total, o.total_bv::float8 AS total_bv,
             o.created_at, o.location_id::int AS location_id, l.name AS location_name,
             m.member_code, m.full_name AS member_name,
-            d.status AS dispatch_status, d.tracking_no, d.dispatched_at, d.delivered_at, c.name AS courier_name
+            d.status AS dispatch_status, d.tracking_no, d.dispatched_at, d.delivered_at, c.name AS courier_name,
+            c.tracking_url_template
        FROM orders o JOIN members m ON m.id = o.member_id JOIN locations l ON l.id = o.location_id
        LEFT JOIN dispatches d ON d.order_id = o.id LEFT JOIN couriers c ON c.id = d.courier_id
       WHERE o.id = $1::bigint ${scoped(onlyLocation)}`, orderId);
   if (!o) return null;
+  // http(s) only (the template is admin-entered): never hand the browser a javascript: link
+  o.tracking_url = o.tracking_no && /^https?:\/\//i.test(o.tracking_url_template || '')
+    ? o.tracking_url_template.replaceAll('{tracking_no}', encodeURIComponent(o.tracking_no)) : null;
+  delete o.tracking_url_template;
   o.items = await prisma.$queryRawUnsafe(
     `SELECT i.id::int AS id, i.product_id::int AS product_id, p.name AS product_name, p.sku, i.qty,
             i.price::float8 AS price, i.bv::float8 AS bv, i.gst_percent::float8 AS gst_percent
@@ -25,19 +30,22 @@ export async function getOrder(orderId, onlyLocation = null) {
   return o;
 }
 
-export async function listOrders({ page, limit, q, status, locationId, onlyLocation, memberCode }) {
+export async function listOrders({ page, limit, q, status, paymentStatus, locationId, onlyLocation, memberCode }) {
   const conds = [];
   const params = [];
   if (q) { params.push(`%${q}%`); conds.push(`(o.order_no ILIKE $${params.length} OR m.member_code ILIKE $${params.length} OR m.full_name ILIKE $${params.length})`); }
   if (memberCode) { params.push(memberCode); conds.push(`m.member_code = $${params.length}`); }
   if (['PLACED', 'CONFIRMED', 'DISPATCHED', 'DELIVERED', 'CANCELLED'].includes(status)) conds.push(`o.status = '${status}'`);
+  if (['PENDING', 'PAID', 'REFUND_DUE'].includes(paymentStatus)) conds.push(`o.payment_status = '${paymentStatus}'`);
   const loc = onlyLocation || locationId;
   if (loc) conds.push(`o.location_id = ${Number(loc)}`);
   const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
-  const from = `orders o JOIN members m ON m.id = o.member_id JOIN locations l ON l.id = o.location_id`;
+  const from = `orders o JOIN members m ON m.id = o.member_id JOIN locations l ON l.id = o.location_id
+                LEFT JOIN dispatches d ON d.order_id = o.id LEFT JOIN couriers c ON c.id = d.courier_id`;
   const rows = await prisma.$queryRawUnsafe(
     `SELECT o.id::int AS id, o.order_no, o.type, o.status, o.payment_status, o.total::float8 AS total, o.created_at,
-            m.member_code, m.full_name AS member_name, l.name AS location_name
+            m.member_code, m.full_name AS member_name, l.name AS location_name,
+            c.name AS courier_name, d.tracking_no, d.dispatched_at, d.delivered_at
        FROM ${from} ${where} ORDER BY o.id DESC LIMIT ${limit} OFFSET ${(page - 1) * limit}`, ...params);
   const [{ n }] = await prisma.$queryRawUnsafe(`SELECT COUNT(*)::int AS n FROM ${from} ${where}`, ...params);
   return { rows, total: n, page, limit };
@@ -66,7 +74,7 @@ export async function placeOrder({ member_code, location_id, type, payment_mode,
     const orderNo = await nextNo(tx, 'order', 'ORD');
     const [{ id: oid }] = await tx.$queryRawUnsafe(
       `INSERT INTO orders (order_no, member_id, location_id, type, subtotal, gst_amount, total, total_bv, payment_mode)
-       VALUES ($1, $2::bigint, $3::bigint, $4, $5, $6, $7, $8, $9) RETURNING id::int AS id`,
+       VALUES ($1, $2::bigint, $3::bigint, $4, $5::numeric, $6::numeric, $7::numeric, $8::numeric, $9) RETURNING id::int AS id`,
       orderNo, m.id, location_id, type, subtotal.toFixed(2), gst.toFixed(2), (subtotal + gst).toFixed(2), bv.toFixed(2), payment_mode ?? null);
     for (const l of lines) {
       await tx.$executeRawUnsafe(
@@ -102,6 +110,11 @@ export async function dispatchOrder(orderId, { courier_id, tracking_no }, onlyLo
   await prisma.$transaction(async (tx) => {
     const o = await lockOrder(tx, orderId, onlyLocation);
     if (o.status !== 'CONFIRMED') throw badRequest('Only a paid (confirmed) order can be dispatched');
+    if (courier_id) {
+      const [c] = await tx.$queryRawUnsafe(`SELECT active FROM couriers WHERE id = $1::bigint`, courier_id);
+      if (!c) throw badRequest('Courier not found');
+      if (c.active !== true) throw badRequest('That courier is inactive');
+    }
     await tx.$executeRawUnsafe(
       `INSERT INTO dispatches (order_id, courier_id, tracking_no, dispatched_at, status)
        VALUES ($1::bigint, $2::bigint, $3, now(), 'DISPATCHED')
