@@ -16,12 +16,12 @@ export async function getTransfer(db, tid) {
   return t;
 }
 
-/** Send stock: leaves the source immediately (TRANSFER_OUT). items: [{product_id, qty}] */
-export async function createTransfer({ from_location, to_location, items }) {
+/** Send stock: leaves the source immediately (TRANSFER_OUT). items: [{product_id, qty}]. Pass `outerTx` to join a caller's transaction. */
+export async function createTransfer({ from_location, to_location, items }, outerTx = null) {
   if (from_location === to_location) throw badRequest('From and To location must be different');
   const merged = new Map();
   items.forEach((i) => merged.set(i.product_id, (merged.get(i.product_id) || 0) + i.qty));
-  const tid = await prisma.$transaction(async (tx) => {
+  const run = async (tx) => {
     const locs = await tx.$queryRawUnsafe(
       `SELECT id FROM locations WHERE id IN ($1::bigint, $2::bigint) AND active = true`, from_location, to_location);
     if (locs.length !== 2) throw badRequest('Location not found');
@@ -47,8 +47,9 @@ export async function createTransfer({ from_location, to_location, items }) {
          VALUES ($1::bigint, $2::bigint, $3, 'TRANSFER_OUT', 'stock_transfers', $4::bigint)`, from_location, productId, -qty, id);
     }
     return id;
-  }, TX);
-  return getTransfer(prisma, tid);
+  };
+  const tid = outerTx ? await run(outerTx) : await prisma.$transaction(run, TX);
+  return getTransfer(outerTx || prisma, tid);
 }
 
 /** Accept: received qty goes to destination, shortfall back to source. onlyTo restricts to one destination (depo login). */
@@ -61,6 +62,9 @@ export async function acceptTransfer(tid, received, userId, onlyTo = null) {
     const items = await tx.$queryRawUnsafe(
       `SELECT id::int AS id, product_id::int AS product_id, qty_sent FROM stock_transfer_items WHERE transfer_id = $1::bigint`, tid);
     const given = new Map(received.map((i) => [i.id, i.qty_accepted]));
+    if (given.size !== received.length || received.some((r) => !items.some((it) => it.id === r.id))) {
+      throw badRequest('The received quantities do not match the items of this transfer');
+    }
     for (const it of items) {
       const acc = given.get(it.id);
       if (acc === undefined) throw badRequest('Enter the received quantity for every product');

@@ -2,7 +2,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../core/prisma.js';
-import { notFound } from '../../core/errors.js';
+import { badRequest, notFound } from '../../core/errors.js';
 import { requireAuth, requireRole } from '../../middleware/auth.js';
 import { wrap } from './helpers.js';
 import { getTransfer, createTransfer, acceptTransfer, rejectTransfer } from './transfer.service.js';
@@ -10,15 +10,20 @@ import { getTransfer, createTransfer, acceptTransfer, rejectTransfer } from './t
 const router = Router();
 router.use(requireAuth, requireRole('SUPER_ADMIN', 'ADMIN'));
 
+const parseId = (req) => {
+  const n = Number(req.params.id);
+  if (!Number.isInteger(n) || n < 1) throw badRequest('Invalid id');
+  return n;
+};
 const STATUSES = ['SENT', 'ACCEPTED', 'REJECTED'];
 const id = z.coerce.number().int().positive();
 const createSchema = z.object({
   from_location: id,
   to_location: id,
-  items: z.array(z.object({ product_id: id, qty: z.coerce.number().int().positive() })).min(1, 'Add at least one product'),
+  items: z.array(z.object({ product_id: id, qty: z.coerce.number().int().positive().max(10_000_000) })).min(1, 'Add at least one product').max(200),
 });
 const acceptSchema = z.object({
-  items: z.array(z.object({ id, qty_accepted: z.coerce.number().int().min(0) })).min(1),
+  items: z.array(z.object({ id, qty_accepted: z.coerce.number().int().min(0).max(10_000_000) })).min(1),
 });
 
 router.get('/', wrap(async (req, res) => {
@@ -41,7 +46,7 @@ router.get('/', wrap(async (req, res) => {
 }));
 
 router.get('/:id', wrap(async (req, res) => {
-  const t = await getTransfer(prisma, Number(req.params.id));
+  const t = await getTransfer(prisma, parseId(req));
   if (!t) throw notFound('Transfer not found');
   res.json(t);
 }));
@@ -52,11 +57,11 @@ router.post('/', wrap(async (req, res) => {
 
 router.put('/:id/accept', wrap(async (req, res) => {
   const d = acceptSchema.parse(req.body);
-  res.json(await acceptTransfer(Number(req.params.id), d.items, Number(req.user.sub)));
+  res.json(await acceptTransfer(parseId(req), d.items, Number(req.user.sub)));
 }));
 
 router.put('/:id/reject', wrap(async (req, res) => {
-  res.json(await rejectTransfer(Number(req.params.id), Number(req.user.sub)));
+  res.json(await rejectTransfer(parseId(req), Number(req.user.sub)));
 }));
 
 export default router;

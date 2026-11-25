@@ -7,7 +7,7 @@ import FormField, { inputCls } from '../../components/FormField.jsx';
 import { apiMessage, useList, useOptions } from './useList.js';
 
 const blank = { mode: 'PO_WISE', po_id: '', supplier_id: '', location_id: '', invoice_no: '', items: [] };
-const blankItem = { product_id: '', name: '', qty: '', max: null, batch_no: '', expiry_date: '' };
+const blankItem = { product_id: '', name: '', qty: '', rejected_qty: '', max: null, batch_no: '', expiry_date: '' };
 
 export default function StockInwardPage() {
   const [page, setPage] = useState(1);
@@ -59,8 +59,9 @@ export default function StockInwardPage() {
       mode: form.mode,
       location_id: Number(form.location_id),
       invoice_no: form.invoice_no,
-      items: form.items.filter((i) => Number(i.qty) > 0).map((i) => ({
-        product_id: Number(i.product_id), qty: Number(i.qty), batch_no: i.batch_no, expiry_date: i.expiry_date,
+      items: form.items.filter((i) => Number(i.qty) > 0 || Number(i.rejected_qty) > 0).map((i) => ({
+        product_id: Number(i.product_id), qty: Number(i.qty) || 0, rejected_qty: Number(i.rejected_qty) || 0,
+        batch_no: i.batch_no, expiry_date: i.expiry_date,
       })),
     };
     if (form.mode === 'PO_WISE') body.po_id = Number(form.po_id);
@@ -83,7 +84,9 @@ export default function StockInwardPage() {
     { key: 'supplier_name', label: 'Supplier' },
     { key: 'location_name', label: 'Location' },
     { key: 'invoice_no', label: 'Invoice' },
-    { key: 'total_qty', label: 'Qty', render: (r) => `${r.total_qty} (${r.item_count} items)` },
+    { key: 'total_qty', label: 'Accepted', render: (r) => `${r.total_qty} (${r.item_count} items)` },
+    { key: 'total_rejected', label: 'Rejected', render: (r) => (
+      <span className={r.total_rejected > 0 ? 'font-semibold text-red-700' : ''}>{r.total_rejected}</span>) },
     { key: 'received_at', label: 'Date', render: (r) => new Date(r.received_at).toLocaleDateString('en-IN') },
   ];
 
@@ -138,6 +141,7 @@ export default function StockInwardPage() {
 
           <div className="space-y-3">
             <div className="text-sm font-medium text-gray-700">Products received</div>
+            <p className="text-xs text-gray-500">Only the accepted quantity enters stock and counts against the purchase order. Rejected goods are recorded on the receipt.</p>
             {form.items.length === 0 && form.mode === 'PO_WISE' && <p className="text-sm text-gray-500">Choose a purchase order to load its pending products.</p>}
             {form.items.map((it, idx) => (
               <div key={idx} className="rounded-lg border border-gray-200 p-3 space-y-2">
@@ -149,9 +153,13 @@ export default function StockInwardPage() {
                     {products.map((p) => <option key={p.id} value={p.id}>{p.sku} · {p.name}</option>)}
                   </select>
                 )}
-                <div className="grid grid-cols-3 gap-2">
-                  <input aria-label="Quantity" type="number" min="0" max={it.max ?? undefined} step="1" placeholder="Qty" value={it.qty}
+                <div className="grid grid-cols-2 gap-2">
+                  <input aria-label="Accepted quantity" type="number" min="0" max={it.max ?? undefined} step="1" placeholder="Accepted qty" value={it.qty}
                     onChange={(e) => setItem(idx, { qty: e.target.value })} className={inputCls} />
+                  <input aria-label="Rejected quantity" type="number" min="0" step="1" placeholder="Rejected qty" value={it.rejected_qty}
+                    onChange={(e) => setItem(idx, { rejected_qty: e.target.value })} className={inputCls} />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
                   <input aria-label="Batch no" placeholder="Batch" value={it.batch_no} onChange={(e) => setItem(idx, { batch_no: e.target.value })} className={inputCls} />
                   <input aria-label="Expiry date" type="date" value={it.expiry_date} onChange={(e) => setItem(idx, { expiry_date: e.target.value })} className={inputCls} />
                 </div>

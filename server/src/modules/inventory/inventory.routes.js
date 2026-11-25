@@ -6,6 +6,7 @@ import stock from './stock.routes.js';
 import transfers from './transfer.routes.js';
 import pcr from './pcr.routes.js';
 import productImage from './productImage.routes.js';
+import depos from '../depo/location.routes.js';
 
 const req = z.string().trim().min(1);
 const opt = z.string().trim().transform((v) => (v === '' ? null : v)).nullish();
@@ -78,6 +79,7 @@ router.use('/couriers', makeCrud({
 router.use('/purchase-orders', purchase);
 router.use('/stock-transfers', transfers);
 router.use('/pcr', pcr);
+router.use('/depos', depos);
 router.use('/', stock);
 
 export default router;

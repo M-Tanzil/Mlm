@@ -37,6 +37,7 @@ export function useOptions(endpoint, extra) {
   const key = JSON.stringify(extra || {});
   const [rows, setRows] = useState([]);
   useEffect(() => {
+    if (!endpoint) return undefined;
     let off = false;
     (async () => {
       const all = [];

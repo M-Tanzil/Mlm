@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import Login from './pages/Login.jsx';
-import Dashboard from './pages/Dashboard.jsx';
 import PanelLayout from './layouts/PanelLayout.jsx';
 import ProtectedRoute from './routes/ProtectedRoute.jsx';
 import NetworkTree from './features/network/NetworkTree.jsx';
@@ -14,6 +13,11 @@ import StockInwardPage from './features/inventory/StockInwardPage.jsx';
 import StockReturnsPage from './features/inventory/StockReturnsPage.jsx';
 import StockReportPage from './features/inventory/StockReportPage.jsx';
 import StockMovementsPage from './features/inventory/StockMovementsPage.jsx';
+import StockTransfersPage from './features/inventory/StockTransfersPage.jsx';
+import DepoManagementPage from './features/depo/DepoManagementPage.jsx';
+import PcrRequestsPage from './features/depo/PcrRequestsPage.jsx';
+import DepoStockPage from './features/depo/DepoStockPage.jsx';
+import DepoPcrPage from './features/depo/DepoPcrPage.jsx';
 
 const adminLinks = [
   { to: '/admin', label: 'Dashboard' },
@@ -25,6 +29,9 @@ const adminLinks = [
   { to: '/admin/inventory/purchase-orders', label: 'Purchase Orders' },
   { to: '/admin/inventory/stock-inward', label: 'Stock Inward' },
   { to: '/admin/inventory/stock-returns', label: 'Stock Returns' },
+  { to: '/admin/inventory/stock-transfers', label: 'Stock Transfers' },
+  { to: '/admin/depos', label: 'Depo & Franchise' },
+  { to: '/admin/pcr', label: 'Stock Requests (PCR)' },
   { to: '/admin/inventory/stock-report', label: 'Stock Report' },
   { to: '/admin/inventory/stock-movements', label: 'Stock Movements' },
 ];
@@ -32,7 +39,11 @@ const distLinks = [
   { to: '/distributor', label: 'My Desktop' },
   { to: '/distributor/network', label: 'Network' },
 ];
-const depoLinks = [{ to: '/depo', label: 'Dashboard' }];
+const depoLinks = [
+  { to: '/depo', label: 'My Stock' },
+  { to: '/depo/incoming', label: 'Incoming Stock' },
+  { to: '/depo/requests', label: 'Stock Requests' },
+];
 
 function Home() {
   const role = useSelector((s) => s.auth.role);
@@ -58,6 +69,9 @@ export default function App() {
         <Route path="inventory/purchase-orders" element={<PurchaseOrdersPage />} />
         <Route path="inventory/stock-inward" element={<StockInwardPage />} />
         <Route path="inventory/stock-returns" element={<StockReturnsPage />} />
+        <Route path="inventory/stock-transfers" element={<StockTransfersPage />} />
+        <Route path="depos" element={<DepoManagementPage />} />
+        <Route path="pcr" element={<PcrRequestsPage />} />
         <Route path="inventory/stock-report" element={<StockReportPage />} />
         <Route path="inventory/stock-movements" element={<StockMovementsPage />} />
       </Route>
@@ -68,7 +82,9 @@ export default function App() {
       </Route>
       <Route path="/depo" element={
         <ProtectedRoute roles={['DEPO', 'FRANCHISE']}><PanelLayout title="Depo / Franchise" links={depoLinks} /></ProtectedRoute>}>
-        <Route index element={<Dashboard name="Depo" />} />
+        <Route index element={<DepoStockPage />} />
+        <Route path="incoming" element={<StockTransfersPage base="/depo/transfers" canCreate={false} title="Incoming Stock" />} />
+        <Route path="requests" element={<DepoPcrPage />} />
       </Route>
     </Routes>
     </>

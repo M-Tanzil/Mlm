@@ -34,12 +34,16 @@ const inwardSchema = z.object({
   location_id: id,
   invoice_no: text,
   items: z.array(z.object({
-    product_id: id, qty,
+    product_id: id,
+    // qty = ACCEPTED quantity (the only part that enters stock); rejected_qty = refused at the gate (damaged, wrong item...)
+    qty: z.coerce.number().int().min(0).max(10_000_000),
+    rejected_qty: z.coerce.number().int().min(0).max(10_000_000).default(0),
     batch_no: text,
     expiry_date: z.string().trim()
       .refine((v) => v === '' || isDate(v), 'Use a valid date (YYYY-MM-DD)')
       .transform((v) => v || null).nullish(),
-  })).min(1, 'Add at least one product'),
+  }).refine((i) => i.qty + i.rejected_qty > 0, 'Enter an accepted or a rejected quantity for every product'))
+    .min(1, 'Add at least one product'),
 });
 
 router.get('/stock-inward', ...guard, wrap(async (req, res) => {
@@ -54,7 +58,8 @@ router.get('/stock-inward', ...guard, wrap(async (req, res) => {
     `SELECT si.id::int AS id, si.inward_no, si.mode, po.po_no, s.name AS supplier_name, l.name AS location_name,
             si.invoice_no, si.received_at,
             (SELECT COUNT(*)::int FROM stock_inward_items x WHERE x.inward_id = si.id) AS item_count,
-            (SELECT COALESCE(SUM(x.qty), 0)::int FROM stock_inward_items x WHERE x.inward_id = si.id) AS total_qty
+            (SELECT COALESCE(SUM(x.qty), 0)::int FROM stock_inward_items x WHERE x.inward_id = si.id) AS total_qty,
+            (SELECT COALESCE(SUM(x.rejected_qty), 0)::int FROM stock_inward_items x WHERE x.inward_id = si.id) AS total_rejected
        FROM ${from} ${where} ORDER BY si.id DESC LIMIT ${limit} OFFSET ${offset}`, ...params);
   const [{ n }] = await prisma.$queryRawUnsafe(`SELECT COUNT(*)::int AS n FROM ${from} ${where}`, ...params);
   res.json({ rows, total: n, page, limit });
@@ -106,7 +111,10 @@ router.post('/stock-inward', ...guard, wrap(async (req, res) => {
         if (left > 0) throw badRequest('Received quantity is more than what is pending on the purchase order');
       }
       const done = poItems.every((l) => l.received_qty >= l.qty);
-      await tx.$executeRawUnsafe(`UPDATE purchase_orders SET status = $1 WHERE id = $2::bigint`, done ? 'CLOSED' : 'PARTIAL', po.id);
+      // only accepted goods count as received, so an all-rejected delivery leaves the PO status (and its cancel option) as it was
+      if (d.items.some((i) => i.qty > 0)) {
+        await tx.$executeRawUnsafe(`UPDATE purchase_orders SET status = $1 WHERE id = $2::bigint`, done ? 'CLOSED' : 'PARTIAL', po.id);
+      }
     } else {
       const [s] = await tx.$queryRawUnsafe(`SELECT active FROM suppliers WHERE id = $1::bigint`, supplierId);
       if (!s) throw notFound('Supplier not found');
@@ -130,8 +138,9 @@ router.post('/stock-inward', ...guard, wrap(async (req, res) => {
       inwardNo, d.mode, poId, supplierId, d.location_id, d.invoice_no ?? null, Number(req.user.sub));
     for (const it of d.items) {
       await tx.$executeRawUnsafe(
-        `INSERT INTO stock_inward_items (inward_id, product_id, qty, batch_no, expiry_date) VALUES ($1::bigint, $2::bigint, $3, $4, $5::date)`,
-        inwardId, it.product_id, it.qty, it.batch_no ?? null, it.expiry_date ?? null);
+        `INSERT INTO stock_inward_items (inward_id, product_id, qty, rejected_qty, batch_no, expiry_date) VALUES ($1::bigint, $2::bigint, $3, $4, $5, $6::date)`,
+        inwardId, it.product_id, it.qty, it.rejected_qty, it.batch_no ?? null, it.expiry_date ?? null);
+      if (it.qty === 0) continue; // fully rejected line: recorded on the GRN, nothing enters stock
       await tx.$executeRawUnsafe(
         `INSERT INTO stock_ledger (location_id, product_id, qty_change, txn_type, ref_type, ref_id)
          VALUES ($1::bigint, $2::bigint, $3, 'INWARD', 'stock_inward', $4::bigint)`,
