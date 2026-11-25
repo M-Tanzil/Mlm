@@ -16,10 +16,31 @@ export async function login(loginId, password) {
 
   await prisma.$executeRaw`UPDATE users SET last_login_at = now() WHERE id = ${BigInt(user.id)}`;
 
+  return issueTokens(user);
+}
+
+function issueTokens(user) {
   const payload = { sub: user.id, role: user.role };
   return {
     accessToken: jwt.sign(payload, config.jwt.accessSecret, { expiresIn: config.jwt.accessTtl }),
     refreshToken: jwt.sign(payload, config.jwt.refreshSecret, { expiresIn: config.jwt.refreshTtl }),
     role: user.role,
   };
+}
+
+// shortcut: stateless refresh tokens (no refresh_tokens table row), so no per-token revoke; blocking the user still stops refresh
+export async function refresh(refreshToken) {
+  let sub;
+  try {
+    ({ sub } = jwt.verify(refreshToken, config.jwt.refreshSecret));
+  } catch {
+    throw unauthorized('Invalid or expired refresh token');
+  }
+  // re-read role/status so role changes and blocked users take effect
+  const rows = await prisma.$queryRaw`
+    SELECT u.id::text AS id, u.status, r.code AS role
+      FROM users u JOIN roles r ON r.id = u.role_id
+     WHERE u.id = ${BigInt(sub)}`;
+  if (!rows[0] || rows[0].status !== 'ACTIVE') throw unauthorized('Invalid or expired refresh token');
+  return issueTokens(rows[0]);
 }

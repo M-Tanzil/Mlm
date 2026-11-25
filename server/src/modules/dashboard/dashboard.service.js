@@ -49,7 +49,8 @@ export async function getAdminSummary() {
       ? { status: cycle[0].status, from: cycle[0].period_from, to: cycle[0].period_to }
       : null,
   };
-}   
+}
+
 export async function getDistributorSummary(userId) {
   const [me] = await prisma.$queryRaw`
     SELECT m.id::text AS id, m.member_code, m.full_name, m.path::text AS path,
