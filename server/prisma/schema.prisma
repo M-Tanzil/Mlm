@@ -18,6 +18,10 @@ model announcements {
   event_date DateTime? @db.Date
   published  Boolean   @default(true)
   created_at DateTime  @default(now()) @db.Timestamptz(6)
+  audience   String    @default("ALL")
+  starts_at  DateTime? @db.Timestamptz(6)
+  expires_at DateTime? @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @db.Timestamptz(6)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -721,8 +725,13 @@ model tickets {
   status          String            @default("OPEN")
   priority        String?           @default("NORMAL")
   created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  category        String            @default("GENERAL")
+  assigned_to     BigInt?
+  resolved_at     DateTime?         @db.Timestamptz(6)
+  resolution      String?
   ticket_messages ticket_messages[]
   members         members           @relation(fields: [member_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assignee        users?            @relation("ticket_assignee", fields: [assigned_to], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -755,5 +764,6 @@ model users {
   stock_inward                          stock_inward[]
   stock_transfers                       stock_transfers[]
   ticket_messages                       ticket_messages[]
+  tickets_assigned                      tickets[]                  @relation("ticket_assignee")
   roles                                 roles             @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }

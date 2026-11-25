@@ -16,6 +16,7 @@ export function useList(endpoint, params) {
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
+    if (!endpoint) return undefined; // e.g. a modal's list while the modal is closed
     let off = false;
     const t = setTimeout(async () => {
       setState((s) => ({ ...s, loading: true }));

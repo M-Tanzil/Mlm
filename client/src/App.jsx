@@ -19,11 +19,24 @@ import PcrRequestsPage from './features/depo/PcrRequestsPage.jsx';
 import DepoStockPage from './features/depo/DepoStockPage.jsx';
 import DepoPcrPage from './features/depo/DepoPcrPage.jsx';
 import OrdersPage from './features/orders/OrdersPage.jsx';
+import JoiningPackagesPage from './features/orders/JoiningPackagesPage.jsx';
+import SchemesPage from './features/schemes/SchemesPage.jsx';
+import MyAchievementsPage from './features/schemes/MyAchievementsPage.jsx';
+import NotificationsPage from './features/notifications/NotificationsPage.jsx';
+import SupportDeskPage from './features/support/SupportDeskPage.jsx';
+import MySupportPage from './features/support/MySupportPage.jsx';
+import AnnouncementsPage from './features/announcements/AnnouncementsPage.jsx';
+import NewsPage from './features/announcements/NewsPage.jsx';
 
 const adminLinks = [
   { to: '/admin', label: 'Dashboard' },
   { to: '/admin/network', label: 'Network Tree' },
   { to: '/admin/orders', label: 'Orders & Dispatch' },
+  { to: '/admin/joining-packages', label: 'Joining Packages' },
+  { to: '/admin/schemes', label: 'Schemes & Achievements' },
+  { to: '/admin/notifications', label: 'Email & SMS' },
+  { to: '/admin/support', label: 'Support Tickets' },
+  { to: '/admin/announcements', label: 'Announcements' },
   { to: '/admin/inventory/categories', label: 'Product Categories' },
   { to: '/admin/inventory/products', label: 'Products' },
   { to: '/admin/inventory/suppliers', label: 'Suppliers' },
@@ -40,12 +53,16 @@ const adminLinks = [
 const distLinks = [
   { to: '/distributor', label: 'My Desktop' },
   { to: '/distributor/network', label: 'Network' },
+  { to: '/distributor/achievements', label: 'My Achievements' },
+  { to: '/distributor/news', label: 'News' },
+  { to: '/distributor/support', label: 'My Support' },
 ];
 const depoLinks = [
   { to: '/depo', label: 'My Stock' },
   { to: '/depo/orders', label: 'Orders & Dispatch' },
   { to: '/depo/incoming', label: 'Incoming Stock' },
   { to: '/depo/requests', label: 'Stock Requests' },
+  { to: '/depo/news', label: 'News' },
 ];
 
 function Home() {
@@ -66,6 +83,11 @@ export default function App() {
         <Route index element={<AdminDashboard />} />
         <Route path="network" element={<NetworkTree />} />
         <Route path="orders" element={<OrdersPage />} />
+        <Route path="joining-packages" element={<JoiningPackagesPage />} />
+        <Route path="schemes" element={<SchemesPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="support" element={<SupportDeskPage />} />
+        <Route path="announcements" element={<AnnouncementsPage />} />
         <Route path="inventory/categories" element={<CategoriesPage />} />
         <Route path="inventory/products" element={<ProductsPage />} />
         <Route path="inventory/suppliers" element={<SuppliersPage />} />
@@ -83,6 +105,9 @@ export default function App() {
         <ProtectedRoute roles={['DISTRIBUTOR']}><PanelLayout title="Distributor" links={distLinks} /></ProtectedRoute>}>
         <Route index element={<DistributorHome />} />
         <Route path="network" element={<NetworkTree />} />
+        <Route path="achievements" element={<MyAchievementsPage />} />
+        <Route path="news" element={<NewsPage />} />
+        <Route path="support" element={<MySupportPage />} />
       </Route>
       <Route path="/depo" element={
         <ProtectedRoute roles={['DEPO', 'FRANCHISE']}><PanelLayout title="Depo / Franchise" links={depoLinks} /></ProtectedRoute>}>
@@ -90,6 +115,7 @@ export default function App() {
         <Route path="orders" element={<OrdersPage base="/depo/orders" couriersEndpoint="/depo/couriers" canPlace={false} canCancel={false} title="Orders & Dispatch" />} />
         <Route path="incoming" element={<StockTransfersPage base="/depo/transfers" canCreate={false} title="Incoming Stock" />} />
         <Route path="requests" element={<DepoPcrPage />} />
+        <Route path="news" element={<NewsPage />} />
       </Route>
     </Routes>
     </>
