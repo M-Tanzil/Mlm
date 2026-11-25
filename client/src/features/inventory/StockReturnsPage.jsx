@@ -4,7 +4,7 @@ import { api } from '../../api/client.js';
 import DataTable from '../../components/DataTable.jsx';
 import Modal from '../../components/Modal.jsx';
 import FormField, { inputCls } from '../../components/FormField.jsx';
-import { useList, useOptions } from './useList.js';
+import { apiMessage, useList, useOptions } from './useList.js';
 
 const blank = { supplier_id: '', location_id: '', product_id: '', qty: '', reason: '' };
 
@@ -33,7 +33,7 @@ export default function StockReturnsPage() {
       setPage(1);
       reload();
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Could not save');
+      setFormError(apiMessage(err, 'Could not save'));
     } finally {
       setSaving(false);
     }

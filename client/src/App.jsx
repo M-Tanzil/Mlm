@@ -10,6 +10,10 @@ import AdminDashboard from './features/admin/AdminDashboard.jsx';
 import DistributorHome from './features/distributor/DistributorHome.jsx';
 import { CategoriesPage, ProductsPage, SuppliersPage, CouriersPage } from './features/inventory/InventoryPages.jsx';
 import PurchaseOrdersPage from './features/inventory/PurchaseOrdersPage.jsx';
+import StockInwardPage from './features/inventory/StockInwardPage.jsx';
+import StockReturnsPage from './features/inventory/StockReturnsPage.jsx';
+import StockReportPage from './features/inventory/StockReportPage.jsx';
+import StockMovementsPage from './features/inventory/StockMovementsPage.jsx';
 
 const adminLinks = [
   { to: '/admin', label: 'Dashboard' },
@@ -19,6 +23,10 @@ const adminLinks = [
   { to: '/admin/inventory/suppliers', label: 'Suppliers' },
   { to: '/admin/inventory/couriers', label: 'Couriers' },
   { to: '/admin/inventory/purchase-orders', label: 'Purchase Orders' },
+  { to: '/admin/inventory/stock-inward', label: 'Stock Inward' },
+  { to: '/admin/inventory/stock-returns', label: 'Stock Returns' },
+  { to: '/admin/inventory/stock-report', label: 'Stock Report' },
+  { to: '/admin/inventory/stock-movements', label: 'Stock Movements' },
 ];
 const distLinks = [
   { to: '/distributor', label: 'My Desktop' },
@@ -48,6 +56,10 @@ export default function App() {
         <Route path="inventory/suppliers" element={<SuppliersPage />} />
         <Route path="inventory/couriers" element={<CouriersPage />} />
         <Route path="inventory/purchase-orders" element={<PurchaseOrdersPage />} />
+        <Route path="inventory/stock-inward" element={<StockInwardPage />} />
+        <Route path="inventory/stock-returns" element={<StockReturnsPage />} />
+        <Route path="inventory/stock-report" element={<StockReportPage />} />
+        <Route path="inventory/stock-movements" element={<StockMovementsPage />} />
       </Route>
       <Route path="/distributor" element={
         <ProtectedRoute roles={['DISTRIBUTOR']}><PanelLayout title="Distributor" links={distLinks} /></ProtectedRoute>}>

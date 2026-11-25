@@ -4,7 +4,7 @@ import { api } from '../../api/client.js';
 import DataTable from '../../components/DataTable.jsx';
 import Modal from '../../components/Modal.jsx';
 import FormField, { inputCls } from '../../components/FormField.jsx';
-import { useList, useOptions } from './useList.js';
+import { apiMessage, useList, useOptions } from './useList.js';
 
 const COLORS = {
   OPEN: 'bg-amber-100 text-amber-800', PARTIAL: 'bg-blue-100 text-blue-800',
@@ -16,12 +16,6 @@ export const StatusBadge = ({ status }) => (
 const inr = (v) => `₹${Number(v || 0).toLocaleString('en-IN')}`;
 const emptyItem = { product_id: '', qty: '', rate: '' };
 
-// Server validation errors carry the real message(s); show the first one
-function apiMessage(err, fallback) {
-  const d = err.response?.data;
-  const first = d?.details?.formErrors?.[0] || Object.values(d?.details?.fieldErrors || {}).flat()[0];
-  return first || d?.error || fallback;
-}
 
 export default function PurchaseOrdersPage() {
   const [page, setPage] = useState(1);
