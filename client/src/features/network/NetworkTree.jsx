@@ -121,7 +121,7 @@ export default function NetworkTree() {
   async function load(c = code, d = depth) {
     setError('');
     try {
-      const url = `/network/binary${c.trim() ? `/${c.trim()}` : ''}`;
+      const url = `/network/binary${c.trim() ? `/${encodeURIComponent(c.trim())}` : ''}`;
       const { data } = await api.get(url, { params: { depth: d } });
       setTree({ data, depth: d });
       setSelected(data);

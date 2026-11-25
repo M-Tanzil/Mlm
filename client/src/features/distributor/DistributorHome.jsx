@@ -66,12 +66,6 @@ export default function DistributorHome() {
         </div>
         <div className="flex gap-3">
           <Link
-            to="/distributor/join"
-            className="min-h-[44px] inline-flex items-center rounded-lg bg-white text-indigo-700 font-semibold px-5"
-          >
-            Add member
-          </Link>
-          <Link
             to="/distributor/network"
             className="min-h-[44px] inline-flex items-center rounded-lg border border-white/60 text-white font-semibold px-5 hover:bg-white/10"
           >

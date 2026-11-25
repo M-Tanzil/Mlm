@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { login } from './auth.service.js';
+import { login, refresh } from './auth.service.js';
 import { requireAuth } from '../../middleware/auth.js';
 
 const router = Router();
@@ -11,6 +11,15 @@ router.post('/login', async (req, res, next) => {
   try {
     const { loginId, password } = loginSchema.parse(req.body);
     res.json(await login(loginId, password));
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post('/refresh', async (req, res, next) => {
+  try {
+    const { refreshToken } = z.object({ refreshToken: z.string().min(1) }).parse(req.body);
+    res.json(await refresh(refreshToken));
   } catch (e) {
     next(e);
   }
