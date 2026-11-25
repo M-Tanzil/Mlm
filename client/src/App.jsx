@@ -8,13 +8,17 @@ import NetworkTree from './features/network/NetworkTree.jsx';
 import TopLoader from './components/TopLoader.jsx';
 import AdminDashboard from './features/admin/AdminDashboard.jsx';
 import DistributorHome from './features/distributor/DistributorHome.jsx';
-import { CategoriesPage, ProductsPage } from './features/inventory/InventoryPages.jsx';
+import { CategoriesPage, ProductsPage, SuppliersPage, CouriersPage } from './features/inventory/InventoryPages.jsx';
+import PurchaseOrdersPage from './features/inventory/PurchaseOrdersPage.jsx';
 
 const adminLinks = [
   { to: '/admin', label: 'Dashboard' },
   { to: '/admin/network', label: 'Network Tree' },
   { to: '/admin/inventory/categories', label: 'Product Categories' },
   { to: '/admin/inventory/products', label: 'Products' },
+  { to: '/admin/inventory/suppliers', label: 'Suppliers' },
+  { to: '/admin/inventory/couriers', label: 'Couriers' },
+  { to: '/admin/inventory/purchase-orders', label: 'Purchase Orders' },
 ];
 const distLinks = [
   { to: '/distributor', label: 'My Desktop' },
@@ -41,6 +45,9 @@ export default function App() {
         <Route path="network" element={<NetworkTree />} />
         <Route path="inventory/categories" element={<CategoriesPage />} />
         <Route path="inventory/products" element={<ProductsPage />} />
+        <Route path="inventory/suppliers" element={<SuppliersPage />} />
+        <Route path="inventory/couriers" element={<CouriersPage />} />
+        <Route path="inventory/purchase-orders" element={<PurchaseOrdersPage />} />
       </Route>
       <Route path="/distributor" element={
         <ProtectedRoute roles={['DISTRIBUTOR']}><PanelLayout title="Distributor" links={distLinks} /></ProtectedRoute>}>

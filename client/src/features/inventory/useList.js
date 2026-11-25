@@ -25,5 +25,24 @@ export function useList(endpoint, params) {
   return { ...state, reload: () => setTick((n) => n + 1) };
 }
 
-/** Rows for a dropdown (active records, up to 100). */
-export const useOptions = (endpoint, extra) => useList(endpoint, { active: true, limit: 100, ...extra }).rows;
+/** Rows for a dropdown: all active records, fetched 100 at a time (max 20 pages = 2000 rows). */
+export function useOptions(endpoint, extra) {
+  const key = JSON.stringify(extra || {});
+  const [rows, setRows] = useState([]);
+  useEffect(() => {
+    let off = false;
+    (async () => {
+      const all = [];
+      try {
+        for (let page = 1; page <= 20; page++) {
+          const { data } = await api.get(endpoint, { params: { active: true, limit: 100, page, ...JSON.parse(key) } });
+          all.push(...data.rows);
+          if (all.length >= data.total || data.rows.length === 0) break;
+        }
+      } catch { /* the dropdown just stays short */ }
+      if (!off) setRows(all);
+    })();
+    return () => { off = true; };
+  }, [endpoint, key]);
+  return rows;
+}

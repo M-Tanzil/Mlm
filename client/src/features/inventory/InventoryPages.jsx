@@ -57,6 +57,7 @@ export function SuppliersPage() {
         { key: 'name', label: 'Supplier' },
         { key: 'contact_person', label: 'Contact' },
         { key: 'mobile', label: 'Mobile' },
+        { key: 'email', label: 'Email' },
         { key: 'gstin', label: 'GSTIN' },
       ]} />
   );
@@ -73,6 +74,7 @@ export function CouriersPage() {
       columns={[
         { key: 'name', label: 'Courier' },
         { key: 'contact', label: 'Contact' },
+        { key: 'tracking_url_template', label: 'Tracking URL' },
       ]} />
   );
 }
