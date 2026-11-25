@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { config } from './core/config.js';
 import { errorHandler } from './middleware/error.js';
+import { loginLimiter } from './middleware/rateLimit.js';
 import { prisma } from './core/prisma.js';
 
 import auth from './modules/auth/auth.routes.js';
@@ -26,6 +27,7 @@ import dashboard from './modules/dashboard/dashboard.routes.js';
 
 export const app = express();
 
+app.set('trust proxy', config.trustProxy);
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: config.clientUrl, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
@@ -42,6 +44,7 @@ app.get('/api/health', async (_req, res) => {
 
 app.use('/uploads', express.static(uploadsDir));
 app.use('/api/company', company);
+app.post('/api/auth/login', loginLimiter); // brute-force guard; passes through to the auth router below
 app.use('/api/auth', auth);
 app.use('/api/members', member);
 app.use('/api/network', network);

@@ -90,7 +90,7 @@ try {
   check('email: SMTP not configured -> permanent FAILED with a clear reason', a.err?.permanent === true && /SMTP is not configured/.test((await row(id)).error), a.err?.message);
   process.env.SMTP_HOST = 'smtp.invalid';
   id = await mkRow('EMAIL', 'a@example.com'); a = await tryAttempt(id);
-  check('email: nodemailer missing -> permanent FAILED with install hint', a.err?.permanent === true && /nodemailer/.test((await row(id)).error), a.err?.message);
+  check('email: SMTP host unreachable -> FAILED (retryable) with the network reason', a.err && !a.err.permanent && /smtp\.invalid|ENOTFOUND|EAI_AGAIN/.test((await row(id)).error), a.err?.message);
   delete process.env.SMTP_HOST;
 
   // ---- concurrency: one row, five workers

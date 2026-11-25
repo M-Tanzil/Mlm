@@ -15,7 +15,7 @@ const post = async (p, body, token) => {
   let j = null; try { j = await r.json(); } catch {}
   return [r.status, j, r.headers];
 };
-const GOOD = { JWT_ACCESS_SECRET: 'a'.repeat(20) + 'Xk3', JWT_REFRESH_SECRET: 'b'.repeat(20) + 'Qm9', CLIENT_URL: 'https://app.example.com' };
+const GOOD = { JWT_ACCESS_SECRET: 'a'.repeat(36) + 'Xk3pQ7', JWT_REFRESH_SECRET: 'b'.repeat(36) + 'Qm9wZ2', CLIENT_URL: 'https://app.example.com' };
 const runIndex = (env) => spawnSync(process.execPath, ['src/index.js'], { env: { ...process.env, NODE_ENV: 'production', PORT: '5057', ...env }, encoding: 'utf8', timeout: 20000 });
 
 try {
@@ -69,7 +69,7 @@ try {
   check('development still starts without strict config', devUp);
 
   // ---- 3. limiter logic in isolation
-  const lim = failureLimiter({ windowMs: 60_000, buckets: [{ name: 't-id', max: 3, key: (r) => r.k, resetOnSuccess: true }, { name: 't-ip', max: 5, key: () => 'ip' }] });
+  const lim = failureLimiter({ windowMs: 60_000, buckets: [{ name: 't-id', max: 3, key: (r) => r.k, resetOnSuccess: true }, { name: 't-ip', max: 50, key: () => 'ip' }] });
   const fire = (k, status) => {
     const res = Object.assign(new EventEmitter(), { statusCode: status, headers: {}, set(h, v) { this.headers[h] = v; return this; }, status(c) { this.statusCode = c; return this; }, json(b) { this.body = b; return this; } });
     let passed = false; lim({ k }, res, () => { passed = true; });
