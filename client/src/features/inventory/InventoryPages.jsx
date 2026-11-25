@@ -19,12 +19,17 @@ const productFields = [
   { key: 'bv', label: 'Business volume (BV)', type: 'number', required: true },
   { key: 'gst_percent', label: 'GST %', type: 'number', required: true },
   { key: 'hsn_code', label: 'HSN code', type: 'text' },
+  { key: 'image_url', label: 'Product image', type: 'image' },
 ];
+const productFilters = [{ key: 'category_id', label: 'Category', optionsFrom: '/inventory/categories' }];
 export function ProductsPage() {
   return (
     <CrudPage title="Product" endpoint="/inventory/products" searchPlaceholder="Search name, SKU or category"
-      fields={productFields}
+      fields={productFields} filters={productFilters}
       columns={[
+        { key: 'image_url', label: '', render: (r) => r.image_url
+          ? <img src={r.image_url} alt="" className="h-10 w-10 rounded-lg object-cover border border-gray-200" />
+          : <div className="h-10 w-10 rounded-lg bg-gray-100" /> },
         { key: 'sku', label: 'SKU' },
         { key: 'name', label: 'Product' },
         { key: 'category_name', label: 'Category' },

@@ -30,6 +30,7 @@ router.use('/products', makeCrud({
     t.mrp::float8 AS mrp, t.dp_price::float8 AS dp_price, t.bv::float8 AS bv,
     t.gst_percent::float8 AS gst_percent, t.hsn_code, t.image_url, t.active`,
   searchCols: ['t.name', 't.sku', 'c.name'],
+  filterCols: { category_id: 't.category_id' },
   schema: z.object({
     category_id: z.coerce.number().int().positive(),
     sku: req, name: req,

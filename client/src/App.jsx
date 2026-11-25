@@ -8,10 +8,13 @@ import NetworkTree from './features/network/NetworkTree.jsx';
 import TopLoader from './components/TopLoader.jsx';
 import AdminDashboard from './features/admin/AdminDashboard.jsx';
 import DistributorHome from './features/distributor/DistributorHome.jsx';
+import { CategoriesPage, ProductsPage } from './features/inventory/InventoryPages.jsx';
 
 const adminLinks = [
   { to: '/admin', label: 'Dashboard' },
   { to: '/admin/network', label: 'Network Tree' },
+  { to: '/admin/inventory/categories', label: 'Product Categories' },
+  { to: '/admin/inventory/products', label: 'Products' },
 ];
 const distLinks = [
   { to: '/distributor', label: 'My Desktop' },
@@ -36,6 +39,8 @@ export default function App() {
         <ProtectedRoute roles={['SUPER_ADMIN', 'ADMIN']}><PanelLayout title="Admin Panel" links={adminLinks} /></ProtectedRoute>}>
         <Route index element={<AdminDashboard />} />
         <Route path="network" element={<NetworkTree />} />
+        <Route path="inventory/categories" element={<CategoriesPage />} />
+        <Route path="inventory/products" element={<ProductsPage />} />
       </Route>
       <Route path="/distributor" element={
         <ProtectedRoute roles={['DISTRIBUTOR']}><PanelLayout title="Distributor" links={distLinks} /></ProtectedRoute>}>
