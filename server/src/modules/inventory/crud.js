@@ -13,7 +13,8 @@ function mapDbError(e) {
 }
 const wrap = (fn) => (req, res, next) => fn(req, res).catch((e) => next(mapDbError(e)));
 
-export function makeCrud({ table, from, columns, searchCols, schema, orderBy = 't.id DESC', aliases = {} }) {
+export function makeCrud({ table, from, columns, searchCols, schema, orderBy = 't.id DESC', aliases = {}, filterCols = {} }) {
+  // filterCols: { queryParam: 't.column' } exact-match filters on whitelisted integer columns, e.g. { category_id: 't.category_id' }
   // aliases: { apiName: 'db_column' } e.g. { active: 'published' }
   const rename = (data) => Object.fromEntries(Object.entries(data).map(([k, v]) => [aliases[k] || k, v]));
   const router = Router();
@@ -37,6 +38,15 @@ export function makeCrud({ table, from, columns, searchCols, schema, orderBy = '
       conds.push(`(${searchCols.map((c) => `${c} ILIKE $1`).join(' OR ')})`);
     }
     if (req.query.active === 'true') conds.push('t.active = true');
+    if (req.query.active === 'false') conds.push('t.active IS NOT TRUE'); // active is nullable: NULL counts as inactive
+    for (const [param, col] of Object.entries(filterCols)) {
+      const v = req.query[param];
+      if (v === undefined || v === '') continue;
+      const n = Number(v);
+      if (!Number.isInteger(n)) throw badRequest(`Invalid ${param}`);
+      params.push(n);
+      conds.push(`${col} = $${params.length}::bigint`);
+    }
     const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
     const rows = await prisma.$queryRawUnsafe(
       `${base} ${where} ORDER BY ${orderBy} LIMIT ${limit} OFFSET ${(page - 1) * limit}`, ...params);
