@@ -4,7 +4,7 @@ import { api } from '../../api/client.js';
 import DataTable from '../../components/DataTable.jsx';
 import Modal from '../../components/Modal.jsx';
 import FormField, { inputCls } from '../../components/FormField.jsx';
-import { useList, useOptions } from './useList.js';
+import { apiMessage, useList, useOptions } from './useList.js';
 
 const blank = { mode: 'PO_WISE', po_id: '', supplier_id: '', location_id: '', invoice_no: '', items: [] };
 const blankItem = { product_id: '', name: '', qty: '', max: null, batch_no: '', expiry_date: '' };
@@ -33,8 +33,15 @@ export default function StockInwardPage() {
 
   async function pickPo(poId) {
     setForm((f) => ({ ...f, po_id: poId, items: [] }));
+    setFormError('');
     if (!poId) return;
-    const { data } = await api.get(`/inventory/purchase-orders/${poId}`);
+    let data;
+    try {
+      ({ data } = await api.get(`/inventory/purchase-orders/${poId}`));
+    } catch (err) {
+      setFormError(apiMessage(err, 'Could not load the purchase order'));
+      return;
+    }
     setForm((f) => ({
       ...f,
       items: data.items.filter((i) => i.qty - i.received_qty > 0).map((i) => ({
@@ -64,7 +71,7 @@ export default function StockInwardPage() {
       setPage(1);
       reload();
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Could not save');
+      setFormError(apiMessage(err, 'Could not save'));
     } finally {
       setSaving(false);
     }

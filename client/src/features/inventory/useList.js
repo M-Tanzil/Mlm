@@ -2,6 +2,13 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client.js';
 
+/** First readable message from an API error (Zod details first, then the plain error text). */
+export function apiMessage(err, fallback) {
+  const d = err.response?.data;
+  const first = d?.details?.formErrors?.[0] || Object.values(d?.details?.fieldErrors || {}).flat()[0];
+  return first || d?.error || fallback;
+}
+
 /** Loads { rows, total } from a list endpoint; reload() fetches again. */
 export function useList(endpoint, params) {
   const key = JSON.stringify(params || {});
