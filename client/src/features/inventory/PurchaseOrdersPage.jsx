@@ -16,6 +16,13 @@ export const StatusBadge = ({ status }) => (
 const inr = (v) => `₹${Number(v || 0).toLocaleString('en-IN')}`;
 const emptyItem = { product_id: '', qty: '', rate: '' };
 
+// Server validation errors carry the real message(s); show the first one
+function apiMessage(err, fallback) {
+  const d = err.response?.data;
+  const first = d?.details?.formErrors?.[0] || Object.values(d?.details?.fieldErrors || {}).flat()[0];
+  return first || d?.error || fallback;
+}
+
 export default function PurchaseOrdersPage() {
   const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
@@ -29,6 +36,7 @@ export default function PurchaseOrdersPage() {
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
   const [viewing, setViewing] = useState(null);
+  const [actionError, setActionError] = useState('');
 
   const total_amount = form.items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.rate) || 0), 0);
   const setItem = (idx, patch) =>
@@ -53,16 +61,20 @@ export default function PurchaseOrdersPage() {
       setPage(1);
       reload();
     } catch (err) {
-      const d = err.response?.data;
-      setFormError(d?.details?.fieldErrors || d?.details?.formErrors?.length ? 'Check the supplier and every product row' : d?.error || 'Could not save');
+      setFormError(apiMessage(err, 'Could not save'));
     } finally {
       setSaving(false);
     }
   }
 
   async function view(row) {
-    const { data } = await api.get(`/inventory/purchase-orders/${row.id}`);
-    setViewing(data);
+    setActionError('');
+    try {
+      const { data } = await api.get(`/inventory/purchase-orders/${row.id}`);
+      setViewing(data);
+    } catch (err) {
+      setActionError(apiMessage(err, 'Could not open the purchase order'));
+    }
   }
   async function cancel(po) {
     if (!window.confirm(`Cancel ${po.po_no}?`)) return;
@@ -71,7 +83,9 @@ export default function PurchaseOrdersPage() {
       setViewing(null);
       reload();
     } catch (err) {
-      alert(err.response?.data?.error || 'Could not cancel');
+      setViewing(null);
+      setActionError(apiMessage(err, 'Could not cancel'));
+      reload();
     }
   }
 
@@ -101,7 +115,7 @@ export default function PurchaseOrdersPage() {
           <button type="button" onClick={openNew} className="h-11 px-4 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">New purchase order</button>
         </div>
       </div>
-      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {(error || actionError) && <p role="alert" className="text-sm text-red-600">{error || actionError}</p>}
       <DataTable columns={columns} rows={rows} loading={loading} page={page} limit={20} total={total} onPage={setPage} />
 
       <Modal open={creating} title="New purchase order" onClose={() => setCreating(false)}>

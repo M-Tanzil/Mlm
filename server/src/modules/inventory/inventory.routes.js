@@ -9,6 +9,13 @@ import productImage from './productImage.routes.js';
 
 const req = z.string().trim().min(1);
 const opt = z.string().trim().transform((v) => (v === '' ? null : v)).nullish();
+// Optional text field: blank -> null, otherwise must match (regex or predicate); upper = force upper-case first
+const optMatching = (test, msg, upper = false) =>
+  z.string().trim()
+    .transform((v) => (upper ? v.toUpperCase() : v))
+    .refine((v) => v === '' || (typeof test === 'function' ? test(v) : test.test(v)), msg)
+    .transform((v) => v || null)
+    .nullish();
 const money = z.coerce.number().min(0);
 const active = z.boolean().optional();
 
@@ -46,9 +53,11 @@ router.use('/suppliers', makeCrud({
   columns: 't.id::int AS id, t.name, t.contact_person, t.mobile, t.email, t.gstin, t.address, t.active',
   searchCols: ['t.name', 't.mobile', 't.gstin'],
   schema: z.object({
-    name: req, contact_person: opt, mobile: opt,
-    email: z.string().trim().email().or(z.literal('')).transform((v) => v || null).nullish(),
-    gstin: opt, address: opt, active,
+    name: req, contact_person: opt,
+    mobile: optMatching(/^\+?[0-9][0-9\s-]{6,14}$/, 'Enter a valid mobile number'),
+    email: optMatching((v) => z.string().email().safeParse(v).success, 'Enter a valid email address'),
+    gstin: optMatching(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/, 'GSTIN must be 15 characters, e.g. 22AAAAA0000A1Z5', true),
+    address: opt, active,
   }),
 }));
 
@@ -57,7 +66,11 @@ router.use('/couriers', makeCrud({
   from: 'couriers t',
   columns: 't.id::int AS id, t.name, t.contact, t.tracking_url_template, t.active',
   searchCols: ['t.name'],
-  schema: z.object({ name: req, contact: opt, tracking_url_template: opt, active }),
+  schema: z.object({
+    name: req, contact: opt, active,
+    // http(s) only: this is rendered as a link later, so javascript: URLs must not get in
+    tracking_url_template: optMatching(/^https?:\/\/\S+$/i, 'Must start with http:// or https:// (use {tracking_no} where the number goes)'),
+  }),
 }));
 
 // TODO (next): purchase-orders, stock-inward, stock-returns, stock-transfers, stock report

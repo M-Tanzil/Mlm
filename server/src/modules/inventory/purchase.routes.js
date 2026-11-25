@@ -15,10 +15,18 @@ const poSchema = z.object({
   supplier_id: id,
   items: z.array(z.object({
     product_id: id,
-    qty: z.coerce.number().int().positive(),
-    rate: z.coerce.number().min(0),
-  })).min(1, 'Add at least one product'),
+    qty: z.coerce.number().int().positive().max(10_000_000),
+    // rejected rather than silently rounded: the column holds 2 decimals, and the total must match the stored rates
+    rate: z.coerce.number().min(0).max(99_999_999).refine((v) => Math.abs(v * 100 - Math.round(v * 100)) < 1e-6, 'Rate can have at most 2 decimals'),
+  })).min(1, 'Add at least one product').max(200, 'At most 200 product lines')
+    .refine((a) => new Set(a.map((i) => i.product_id)).size === a.length, 'Each product can appear only once'),
 });
+
+const parseId = (req) => {
+  const n = Number(req.params.id);
+  if (!Number.isInteger(n) || n < 1) throw badRequest('Invalid id');
+  return n;
+};
 
 async function getPo(poId) {
   const [po] = await prisma.$queryRawUnsafe(
@@ -58,34 +66,49 @@ router.get('/', wrap(async (req, res) => {
 }));
 
 router.get('/:id', wrap(async (req, res) => {
-  const po = await getPo(Number(req.params.id));
+  const po = await getPo(parseId(req));
   if (!po) throw notFound('Purchase order not found');
   res.json(po);
 }));
 
 router.post('/', wrap(async (req, res) => {
   const d = poSchema.parse(req.body);
-  const total = d.items.reduce((s, i) => s + i.qty * i.rate, 0);
   const poId = await prisma.$transaction(async (tx) => {
+    const [sup] = await tx.$queryRawUnsafe(`SELECT active FROM suppliers WHERE id = $1::bigint`, d.supplier_id);
+    if (!sup) throw notFound('Supplier not found');
+    if (sup.active !== true) throw badRequest('That supplier is inactive');
+    const prods = await tx.$queryRawUnsafe(
+      `SELECT id::int AS id, sku, active FROM products WHERE id = ANY($1::bigint[])`, d.items.map((i) => i.product_id));
+    if (prods.length !== d.items.length) throw badRequest('One of the products no longer exists');
+    const inactive = prods.find((p) => p.active !== true);
+    if (inactive) throw badRequest(`Product ${inactive.sku} is inactive`);
+
     const poNo = await nextNo(tx, 'po', 'PO');
     const [{ id: newId }] = await tx.$queryRawUnsafe(
-      `INSERT INTO purchase_orders (po_no, supplier_id, total, created_by) VALUES ($1, $2, $3, $4) RETURNING id::int AS id`,
-      poNo, d.supplier_id, total, Number(req.user.sub));
+      `INSERT INTO purchase_orders (po_no, supplier_id, created_by) VALUES ($1, $2, $3) RETURNING id::int AS id`,
+      poNo, d.supplier_id, Number(req.user.sub));
     for (const it of d.items) {
       await tx.$executeRawUnsafe(
         `INSERT INTO purchase_order_items (po_id, product_id, qty, rate) VALUES ($1, $2, $3, $4)`,
         newId, it.product_id, it.qty, it.rate);
     }
+    // total comes from the stored (rounded) rates, never from the client
+    await tx.$executeRawUnsafe(
+      `UPDATE purchase_orders SET total = (SELECT SUM(qty * rate) FROM purchase_order_items WHERE po_id = $1::bigint) WHERE id = $1::bigint`, newId);
     return newId;
   }, TX);
   res.status(201).json(await getPo(poId));
 }));
 
 router.put('/:id/cancel', wrap(async (req, res) => {
+  const poId = parseId(req);
   const n = await prisma.$executeRawUnsafe(
-    `UPDATE purchase_orders SET status = 'CANCELLED' WHERE id = $1::bigint AND status = 'OPEN'`, Number(req.params.id));
-  if (!n) throw badRequest('Only an OPEN purchase order (nothing received yet) can be cancelled');
-  res.json(await getPo(Number(req.params.id)));
+    `UPDATE purchase_orders SET status = 'CANCELLED' WHERE id = $1::bigint AND status = 'OPEN'`, poId);
+  if (!n) {
+    if (!(await getPo(poId))) throw notFound('Purchase order not found');
+    throw badRequest('Only an OPEN purchase order (nothing received yet) can be cancelled');
+  }
+  res.json(await getPo(poId));
 }));
 
 export default router;
