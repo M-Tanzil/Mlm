@@ -141,7 +141,7 @@ export default function CrudPage({ title, endpoint, columns, fields, filters = N
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{title}</h1>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <label htmlFor="crud-search" className="sr-only">Search</label>
           <input id="crud-search" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }}
             placeholder={searchPlaceholder} className={`${inputCls} w-64`} />

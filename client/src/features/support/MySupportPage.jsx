@@ -53,7 +53,7 @@ export default function MySupportPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">My Support</h1>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <label htmlFor="ms-status" className="sr-only">Status</label>
           <select id="ms-status" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className={`${inputCls} w-40`}>
             <option value="">All tickets</option>{['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}

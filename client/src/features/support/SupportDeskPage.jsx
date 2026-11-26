@@ -89,7 +89,7 @@ export default function SupportDeskPage() {
               <span className="text-gray-600">{open.member_name} ({open.member_code}) · opened {when(open.created_at)}</span></div>
             <Messages messages={open.messages} />
             {err && <p role="alert" className="text-red-600">{err}</p>}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <label className="text-xs text-gray-500">Status
                 <select value={open.status} disabled={busy} onChange={(e) => patch({ status: e.target.value })} className={inputCls}>{opts.statuses.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}</select></label>
               <label className="text-xs text-gray-500">Priority

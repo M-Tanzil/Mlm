@@ -60,7 +60,7 @@ export default function StockReturnsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Stock Return to Supplier</h1>
         <button type="button" onClick={() => { setForm(blank); setFormError(''); setOpen(true); }}
           className="h-11 px-4 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">New return</button>

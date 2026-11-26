@@ -23,10 +23,10 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen grid place-items-center bg-slate-100">
-      <form onSubmit={submit} className="bg-white p-8 rounded-xl shadow w-full max-w-sm space-y-4">
+    <div className="min-h-screen grid place-items-center bg-slate-100 p-4">
+      <form onSubmit={submit} className="bg-white p-5 sm:p-8 rounded-xl shadow w-full max-w-sm space-y-4">
         <h1 className="text-xl font-semibold">Sign in</h1>
-        {error && <p className="text-red-600 text-sm">{error}</p>}
+        {error && <p role="alert" className="text-red-600 text-sm break-words">{error}</p>}
         <input className="w-full border rounded p-2" placeholder="Login ID" value={loginId}
           onChange={(e) => setLoginId(e.target.value)} />
         <input className="w-full border rounded p-2" type="password" placeholder="Password" value={password}

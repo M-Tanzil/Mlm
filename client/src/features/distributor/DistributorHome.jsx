@@ -64,7 +64,7 @@ export default function DistributorHome() {
             {data.package ? ` · ${data.package} package` : ''}
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <Link
             to="/distributor/network"
             className="min-h-[44px] inline-flex items-center rounded-lg border border-white/60 text-white font-semibold px-5 hover:bg-white/10"
@@ -106,6 +106,7 @@ export default function DistributorHome() {
           {data.recentJoinings.length === 0 ? (
             <p className="text-sm text-[#5b6472] py-4">No one has joined your team yet.</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="text-left text-[13px] text-[#5b6472]">
@@ -124,6 +125,7 @@ export default function DistributorHome() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </section>
       </div>

@@ -89,7 +89,7 @@ export default function AnnouncementsPage() {
 
       <Modal open={editing !== null} title={editing?.id ? 'Edit announcement' : 'New announcement'} onClose={() => setEditing(null)}>
         <form onSubmit={submit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField id="an-f-type" label="Type" required error={fe('type')}><select id="an-f-type" value={form.type} onChange={set('type')} className={inputCls}>{Object.entries(TYPES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></FormField>
             <FormField id="an-f-aud" label="Show to" required error={fe('audience')}><select id="an-f-aud" value={form.audience} onChange={set('audience')} className={inputCls}>{Object.entries(AUDIENCES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></FormField>
           </div>
@@ -97,7 +97,7 @@ export default function AnnouncementsPage() {
           <FormField id="an-f-body" label="Details" error={fe('body')}><textarea id="an-f-body" rows={4} maxLength={5000} value={form.body} onChange={set('body')} className={`${inputCls} h-auto py-2`} /></FormField>
           <FormField id="an-f-media" label="Image or link" error={fe('media_url')}><input id="an-f-media" placeholder="https://…" value={form.media_url} onChange={set('media_url')} className={inputCls} /></FormField>
           {form.type === 'EVENT' && <FormField id="an-f-event" label="Event date" error={fe('event_date')}><input id="an-f-event" type="date" value={form.event_date} onChange={set('event_date')} className={inputCls} /></FormField>}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField id="an-f-start" label="Show from" error={fe('starts_at')}><input id="an-f-start" type="datetime-local" value={form.starts_at} onChange={set('starts_at')} className={inputCls} /></FormField>
             <FormField id="an-f-end" label="Hide after" error={fe('expires_at')}><input id="an-f-end" type="datetime-local" min={form.starts_at || undefined} value={form.expires_at} onChange={set('expires_at')} className={inputCls} /></FormField>
           </div>

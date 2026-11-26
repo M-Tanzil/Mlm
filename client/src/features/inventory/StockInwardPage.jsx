@@ -94,7 +94,7 @@ export default function StockInwardPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Stock Inward</h1>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <label htmlFor="in-search" className="sr-only">Search</label>
           <input id="in-search" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Search GRN, PO, supplier, invoice" className={`${inputCls} w-72`} />
           <button type="button" onClick={openNew} className="h-11 px-4 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">Receive stock</button>
@@ -105,7 +105,7 @@ export default function StockInwardPage() {
 
       <Modal open={open} title="Receive stock" onClose={() => setOpen(false)}>
         <form onSubmit={submit} className="space-y-4">
-          <fieldset className="grid grid-cols-2 gap-2">
+          <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <legend className="sr-only">Type</legend>
             {[['PO_WISE', 'PO wise'], ['SUPPLIER_WISE', 'Supplier wise']].map(([v, label]) => (
               <button key={v} type="button" onClick={() => setMode(v)}
@@ -153,13 +153,13 @@ export default function StockInwardPage() {
                     {products.map((p) => <option key={p.id} value={p.id}>{p.sku} · {p.name}</option>)}
                   </select>
                 )}
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input aria-label="Accepted quantity" type="number" min="0" max={it.max ?? undefined} step="1" placeholder="Accepted qty" value={it.qty}
                     onChange={(e) => setItem(idx, { qty: e.target.value })} className={inputCls} />
                   <input aria-label="Rejected quantity" type="number" min="0" step="1" placeholder="Rejected qty" value={it.rejected_qty}
                     onChange={(e) => setItem(idx, { rejected_qty: e.target.value })} className={inputCls} />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input aria-label="Batch no" placeholder="Batch" value={it.batch_no} onChange={(e) => setItem(idx, { batch_no: e.target.value })} className={inputCls} />
                   <input aria-label="Expiry date" type="date" value={it.expiry_date} onChange={(e) => setItem(idx, { expiry_date: e.target.value })} className={inputCls} />
                 </div>

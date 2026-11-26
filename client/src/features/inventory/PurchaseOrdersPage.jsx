@@ -129,7 +129,7 @@ export default function PurchaseOrdersPage() {
                   <option value="">Select product…</option>
                   {products.map((p) => <option key={p.id} value={p.id}>{p.sku} · {p.name}</option>)}
                 </select>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input aria-label="Quantity" type="number" min="1" step="1" required placeholder="Qty" value={it.qty}
                     onChange={(e) => setItem(idx, { qty: e.target.value })} className={inputCls} />
                   <input aria-label="Rate" type="number" min="0" step="any" required placeholder="Rate (₹)" value={it.rate}

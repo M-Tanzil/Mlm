@@ -98,7 +98,7 @@ export default function DepoManagementPage() {
       <Modal open={editing !== null} title={editing?.id ? `Edit ${editing.name}` : 'Add depo / franchise'} onClose={() => setEditing(null)}>
         <form onSubmit={submit} className="space-y-4">
           {!editing?.id && (
-            <fieldset className="grid grid-cols-2 gap-2">
+            <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <legend className="sr-only">Type</legend>
               {[['DEPO', 'Depo'], ['FRANCHISE', 'Franchise']].map(([v, label]) => (
                 <button key={v} type="button" onClick={() => setForm({ ...form, type: v })} aria-pressed={form.type === v}
@@ -109,7 +109,7 @@ export default function DepoManagementPage() {
           <FormField id="dp-name" label="Name" required>
             <input id="dp-name" required value={form.name} onChange={set('name')} className={inputCls} />
           </FormField>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField id="dp-city" label="City"><input id="dp-city" value={form.city} onChange={set('city')} className={inputCls} /></FormField>
             <FormField id="dp-state" label="State"><input id="dp-state" value={form.state} onChange={set('state')} className={inputCls} /></FormField>
           </div>

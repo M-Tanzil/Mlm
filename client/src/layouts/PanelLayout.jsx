@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../features/auth/authSlice.js';
@@ -9,6 +9,7 @@ export default function PanelLayout({ title, links }) {
   const role = useSelector((s) => s.auth.role);
   const { company, changeLogo, error } = useCompany();
   const fileRef = useRef(null);
+  const [open, setOpen] = useState(false); // sidebar drawer, phones only
   const canEditLogo = role === 'SUPER_ADMIN';
 
   function onFile(e) {
@@ -18,8 +19,13 @@ export default function PanelLayout({ title, links }) {
   }
 
   return (
-    <div className="min-h-screen flex">
-      <aside className="w-60 shrink-0 bg-gray-900 text-gray-200 p-4 space-y-1">
+    <div className="min-h-screen flex flex-col md:flex-row" onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}>
+      <header className="md:hidden sticky top-0 z-20 flex items-center gap-3 bg-gray-900 text-white px-3 h-14">
+        <button type="button" aria-label="Open menu" aria-expanded={open} onClick={() => setOpen(true)} className="w-11 h-11 text-2xl">☰</button>
+        <span className="font-semibold text-sm truncate">{company.name}</span>
+      </header>
+      {open && <div className="md:hidden fixed inset-0 z-20 bg-black/40" onClick={() => setOpen(false)} />}
+      <aside className={`${open ? 'block' : 'hidden'} md:block fixed md:static inset-y-0 left-0 z-30 w-64 md:w-60 shrink-0 overflow-y-auto bg-gray-900 text-gray-200 p-4 space-y-1`}>
         <div className="flex items-center gap-3 pb-4 mb-2 border-b border-gray-700">
           {company.logo_url ? (
             <img src={company.logo_url} alt={`${company.name} logo`} className="w-11 h-11 rounded-lg bg-white object-contain" />
@@ -42,11 +48,11 @@ export default function PanelLayout({ title, links }) {
 
         <h2 className="text-xs uppercase tracking-wider text-gray-400 pt-1 pb-2">{title}</h2>
         {links.map((l) => (
-          <Link key={l.to} to={l.to} className="block py-2 px-2 rounded text-sm hover:bg-gray-800 hover:text-white">{l.label}</Link>
+          <Link key={l.to} to={l.to} onClick={() => setOpen(false)} className="block py-2 px-2 rounded text-sm hover:bg-gray-800 hover:text-white">{l.label}</Link>
         ))}
         <button onClick={() => dispatch(logout())} className="mt-4 px-2 text-sm text-gray-400 hover:text-white">Logout</button>
       </aside>
-      <main className="flex-1 p-6 bg-slate-50 min-w-0"><Outlet /></main>
+      <main className="flex-1 p-4 md:p-6 bg-slate-50 min-w-0"><Outlet /></main>
     </div>
   );
 }

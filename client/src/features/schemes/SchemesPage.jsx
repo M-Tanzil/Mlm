@@ -117,7 +117,7 @@ export default function SchemesPage() {
           </FormField>
           <FormField id="sc-target" label="Target" required error={fe('target_value')}><input id="sc-target" type="number" min="0" step="any" required value={form.target_value} onChange={set('target_value')} className={inputCls} /></FormField>
           <FormField id="sc-reward" label="Reward" required error={fe('reward')}><input id="sc-reward" required maxLength={200} value={form.reward} onChange={set('reward')} className={inputCls} /></FormField>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField id="sc-start" label="Starts" required error={fe('start_date')}><input id="sc-start" type="date" required value={form.start_date} onChange={set('start_date')} className={inputCls} /></FormField>
             <FormField id="sc-end" label="Ends" required error={fe('end_date')}><input id="sc-end" type="date" required min={form.start_date || undefined} value={form.end_date} onChange={set('end_date')} className={inputCls} /></FormField>
           </div>
